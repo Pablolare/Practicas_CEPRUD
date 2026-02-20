@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>OpenProject Reporter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+
+        {% if projects %}
+
+            <!-- VISTA: tabla de proyectos -->
+            <div class="cabecera">
+                <h1>Proyectos visibles</h1>
+                <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Identifier</th>
+                        <th>Activo</th>
+                        <th>Público</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projects %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.identifier }}</td>
+                        <td>{{ "Sí" if p.active else "No" }}</td>
+                        <td>{{ "Sí" if p.public else "No" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% else %}
+
+            <!-- VISTA: formulario del token -->
+            <h1>OpenProject Reporter</h1>
+            <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+
+            <!-- Mensajes flash (ej: "Sesión cerrada", "Sin proyectos visibles") -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <p class="alerta {{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- Error directo del servidor (token vacío, fallo de conexión) -->
+            {% if error %}
+                <p class="alerta error">{{ error }}</p>
+            {% endif %}
+
+            <form action="{{ url_for('index') }}" method="POST">
+                <label for="token">Token API</label>
+                <input type="password" id="token" name="token"
+                       placeholder="Tu token de OpenProject" required>
+                <button type="submit">Conectar</button>
+            </form>
+
+        {% endif %}
+
+    </div>
+
+</body>
+</html>
