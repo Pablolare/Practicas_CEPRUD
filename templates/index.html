@@ -2,75 +2,72 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fase 1 - Mostrar proyectos</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; padding: 1rem; background-color: #f8f9fa; }
-        h1 { text-align: center; color: #333; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-        input[type="password"] { width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        button { padding: 0.75rem 1.5rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        button:hover { background-color: #0056b3; }
-        .error { color: #dc3545; font-weight: bold; margin: 1rem 0; }
-        .success, .info { color: #155724; background-color: #d4edda; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
-        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-        .project-card { border: 1px solid #ddd; border-radius: 6px; padding: 1.2rem; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .project-card h3 { margin-top: 0; color: #007bff; }
-        .logout { margin-top: 1rem; text-align: center; }
-    </style>
+    <title>OpenProject Reporter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+
     <div class="container">
-        <h1>Fase 1: Conectar a OpenProject</h1>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-
-        <div class="form-group">
-            <form method="POST" action="{{ url_for('index') }}">
-                <label for="token">Token API de OpenProject:</label>
-                <input type="password" id="token" name="token" 
-                       placeholder="Introduce el token aqui" 
-                       required autofocus>
-                <button type="submit">Conectar y listar proyectos</button>
-            </form>
-        </div>
 
         {% if projects %}
-            <h2>Proyectos visibles ({{ projects|length }} encontrados)</h2>
-            <div class="projects-grid">
-                {% for project in projects %}
-                    <div class="project-card">
-                        <h3>{{ project.name }}</h3>
-                        <p><strong>Identifier:</strong> {{ project.identifier }}</p>
-                        <p><strong>ID:</strong> {{ project.id }}</p>
-                        <p><strong>Activo:</strong> {{ 'Sí' if project.active else 'No' }}</p>
-                        <p><strong>Público:</strong> {{ 'Sí' if project.public else 'No' }}</p>
-                    </div>
-                {% endfor %}
+
+            <!-- VISTA: tabla de proyectos -->
+            <div class="cabecera">
+                <h1>Proyectos visibles</h1>
+                <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
             </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Identifier</th>
+                        <th>Activo</th>
+                        <th>Público</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projects %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.identifier }}</td>
+                        <td>{{ "Sí" if p.active else "No" }}</td>
+                        <td>{{ "Sí" if p.public else "No" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
         {% else %}
-            {% if not error %}
-                <p>Aún no te has conectado. Introduce tu token arriba.</p>
+
+            <!-- VISTA: formulario del token -->
+            <h1>OpenProject Reporter</h1>
+            <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+
+            <!-- Mensajes flash (ej: "Sesión cerrada", "Sin proyectos visibles") -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <p class="alerta {{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- Error directo del servidor (token vacío, fallo de conexión) -->
+            {% if error %}
+                <p class="alerta error">{{ error }}</p>
             {% endif %}
+
+            <form action="{{ url_for('index') }}" method="POST">
+                <label for="token">Token API</label>
+                <input type="password" id="token" name="token"
+                       placeholder="Tu token de OpenProject" required>
+                <button type="submit">Conectar</button>
+            </form>
+
         {% endif %}
 
-        {% if session.op_token %}
-            <div class="logout">
-                <p>Estás conectado. <a href="{{ url_for('logout') }}">Cerrar sesión</a></p>
-            </div>
-        {% endif %}
     </div>
+
 </body>
 </html>
