@@ -16,22 +16,14 @@
             <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
         </div>
 
-        {% macro render_proyecto(p, nivel, clasificacion) %}
-
-        {% set clas = clasificacion.get(p.id | string) %}
+        {% macro render_proyecto(p, nivel) %}
 
         <div class="proyecto-item" data-nivel="{{ nivel }}">
 
             <div class="proyecto-fila" data-id="{{ p.id }}">
                 <span class="proyecto-icono">▶</span>
                 <span class="proyecto-nombre">{{ p.name }}</span>
-                {% if clas %}
-                    <span class="badge badge-{{ clas.tipo }}" id="badge-{{ p.id }}">
-                        {{ "Servicio" if clas.tipo == "servicio" else "Área" }}
-                    </span>
-                {% else %}
-                    <span class="badge badge-ninguno" id="badge-{{ p.id }}"></span>
-                {% endif %}
+                <span class="badge badge-ninguno" id="badge-{{ p.id }}"></span>
                 <span class="proyecto-meta">ID {{ p.id }} · {{ p.identifier }}</span>
             </div>
 
@@ -40,13 +32,13 @@
         </div>
 
         {% for hijo in p.children %}
-            {{ render_proyecto(hijo, nivel + 1, clasificacion) }}
+            {{ render_proyecto(hijo, nivel + 1) }}
         {% endfor %}
 
         {% endmacro %}
 
         {% for proyecto in arbol %}
-            {{ render_proyecto(proyecto, 0, clasificacion) }}
+            {{ render_proyecto(proyecto, 0) }}
         {% endfor %}
 
     {% else %}
@@ -75,14 +67,9 @@
 
 </div>
 
-<!-- Datos de clasificación del servidor. type="application/json" evita que el linter lo trate como JS -->
-<script type="application/json" id="clasificacion-data">{{ clasificacion | tojson }}</script>
-
 <script>
     const cargados = {};
-
-    // Lee los datos de clasificación del servidor
-    const clasificacion = JSON.parse(document.getElementById('clasificacion-data').textContent);
+    const datosPorId = {};  // guarda grupos por proyecto tras la primera carga
 
     // Aplica sangría según data-nivel
     document.querySelectorAll('.proyecto-item').forEach(item => {
@@ -93,11 +80,11 @@
     // Asigna el click a cada fila
     document.querySelectorAll('.proyecto-fila').forEach(fila => {
         fila.addEventListener('click', function () {
-            togglePanel(this.dataset.id, this.dataset.nombre);
+            togglePanel(this.dataset.id);
         });
     });
 
-    function togglePanel(id, nombre) {
+    function togglePanel(id) {
         const panel = document.getElementById('panel-' + id);
         const fila  = panel.previousElementSibling;
 
@@ -117,48 +104,18 @@
         fetch('/proyecto/' + id + '/miembros')
             .then(r => r.json())
             .then(data => {
-                const tipoActual = clasificacion[id] ? clasificacion[id].tipo : 'ninguno';
-                const nombreProyecto = fila.querySelector('.proyecto-nombre').textContent;
+                datosPorId[id] = data;
 
-                // Botones de clasificación
-                let html = '<div class="clasificacion-grupo">';
-                html += '<span class="clasificacion-label">Clasificar</span>';
-                html += '<div class="clasificacion-segmento">';
-                [['ninguno', 'Ninguno'], ['servicio', 'Servicio'], ['area', 'Área']].forEach(([tipo, label]) => {
-                    const activo = tipoActual === tipo ? 'activo' : '';
-                    html += `<button class="btn-clasificar ${activo}" data-id="${id}" data-tipo="${tipo}" data-nombre="${nombreProyecto}">${label}</button>`;
-                });
-                html += '</div></div>';
-
-                // Jefes de proyecto
-                if (data.jefes.length) {
-                    html += '<div class="rol-grupo">';
-                    html += '<span class="rol-titulo rol-servicio">Jefes de proyecto</span>';
-                    data.jefes.forEach(p => {
-                        html += `<div class="persona-item">
-                            <span class="persona-nombre">${p.nombre}</span>
-                            ${p.email ? `<span class="persona-email">${p.email}</span>` : ''}
-                        </div>`;
-                    });
-                    html += '</div>';
-                }
-
-                // Directores técnicos
-                if (data.directores.length) {
-                    html += '<div class="rol-grupo">';
-                    html += '<span class="rol-titulo rol-area">Directores técnicos</span>';
-                    data.directores.forEach(p => {
-                        html += `<div class="persona-item">
-                            <span class="persona-nombre">${p.nombre}</span>
-                            ${p.email ? `<span class="persona-email">${p.email}</span>` : ''}
-                        </div>`;
-                    });
-                    html += '</div>';
-                }
-
-                if (!data.jefes.length && !data.directores.length) {
-                    html += '<p class="sin-responsables">No hay jefes ni directores asignados.</p>';
-                }
+                const html = `
+                    <div class="clasificacion-grupo">
+                        <span class="clasificacion-label">Ver</span>
+                        <div class="clasificacion-segmento">
+                            <button class="btn-clasificar" data-id="${id}" data-tipo="servicio">Servicio</button>
+                            <button class="btn-clasificar" data-id="${id}" data-tipo="area">Área</button>
+                        </div>
+                    </div>
+                    <div class="miembros-resultado" id="resultado-${id}"></div>
+                `;
 
                 panel.innerHTML = '<div class="miembros-panel">' + html + '</div>';
                 cargados[id] = true;
@@ -168,49 +125,50 @@
             });
     }
 
-    // Click en los botones de clasificación (delegado al document)
+    // Click en los botones Servicio / Área
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-clasificar');
         if (!btn) return;
 
-        const id     = btn.dataset.id;
-        const tipo   = btn.dataset.tipo;
-        const nombre = btn.dataset.nombre;
+        const id   = btn.dataset.id;
+        const tipo = btn.dataset.tipo;
+        const data = datosPorId[id];
+        if (!data) return;
 
-        fetch('/proyecto/' + id + '/clasificar', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ tipo, nombre })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.ok) return;
-
-            // Actualiza el badge en la fila
-            const badge = document.getElementById('badge-' + id);
-            if (badge) {
-                if (tipo === 'ninguno') {
-                    badge.className   = 'badge badge-ninguno';
-                    badge.textContent = '';
-                } else {
-                    badge.className   = 'badge badge-' + tipo;
-                    badge.textContent = tipo === 'servicio' ? 'Servicio' : 'Área';
-                }
-            }
-
-            // Marca el botón activo
-            const panel = document.getElementById('panel-' + id);
-            panel.querySelectorAll('.btn-clasificar').forEach(b => {
-                b.classList.toggle('activo', b.dataset.tipo === tipo);
-            });
-
-            // Actualiza el estado local
-            if (tipo === 'ninguno') {
-                delete clasificacion[id];
-            } else {
-                clasificacion[id] = { tipo, nombre_proyecto: nombre };
-            }
+        // Marca el botón activo
+        const panel = document.getElementById('panel-' + id);
+        panel.querySelectorAll('.btn-clasificar').forEach(b => {
+            b.classList.toggle('activo', b === btn);
         });
+
+        // Actualiza el badge
+        const badge = document.getElementById('badge-' + id);
+        if (badge) {
+            badge.className   = 'badge badge-' + tipo;
+            badge.textContent = tipo === 'servicio' ? 'Servicio' : 'Área';
+        }
+
+        // Muestra el grupo correspondiente
+        const personas = tipo === 'servicio' ? data.jefes : data.directores;
+        const titulo   = tipo === 'servicio' ? 'Jefes de proyecto' : 'Directores técnicos';
+        const claseRol = tipo === 'servicio' ? 'rol-servicio' : 'rol-area';
+        const resultado = document.getElementById('resultado-' + id);
+
+        if (!personas.length) {
+            resultado.innerHTML = '<p class="sin-responsables">No hay responsables asignados para este tipo.</p>';
+            return;
+        }
+
+        let html = `<div class="rol-grupo"><span class="rol-titulo ${claseRol}">${titulo}</span>`;
+        personas.forEach(p => {
+            html += `<div class="persona-item">
+                <span class="persona-nombre">${p.nombre}</span>
+                ${p.email ? `<span class="persona-email">${p.email}</span>` : ''}
+            </div>`;
+        });
+        html += '</div>';
+
+        resultado.innerHTML = html;
     });
 </script>
 

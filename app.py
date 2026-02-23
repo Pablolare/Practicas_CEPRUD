@@ -2,15 +2,13 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 import requests
 import base64
 import json
-import os
 
 app = Flask(__name__)
 app.secret_key = "secret_key"
 
-BASE_URL           = "https://ofiwebsubdir.ugr.es"
-ROL_JEFE_SERVICIO  = "Jefe de proyecto"
-ROL_DIRECTOR_AREA  = "Director técnico"
-CLASIFICACION_FILE = "clasificacion.json"
+BASE_URL          = "https://ofiwebsubdir.ugr.es"
+ROL_JEFE_SERVICIO = "Jefe de proyecto"
+ROL_DIRECTOR_AREA = "Director técnico"
 
 
 # ─── Helpers: autenticación ───────────────────────────────────────────────────
@@ -93,29 +91,12 @@ def construir_arbol(projects):
     return raices
 
 
-# ─── Helpers: JSON local ──────────────────────────────────────────────────────
-
-def cargar_clasificacion():
-    """Lee clasificacion.json. Devuelve {} si no existe."""
-    if os.path.exists(CLASIFICACION_FILE):
-        with open(CLASIFICACION_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-
-def guardar_clasificacion(datos):
-    """Guarda el diccionario de clasificación en clasificacion.json."""
-    with open(CLASIFICACION_FILE, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=2)
-
-
 # ─── FASE 1: Conexión ─────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    arbol         = []
-    clasificacion = {}
-    error         = None
+    arbol = []
+    error = None
 
     if request.method == "POST":
         token = request.form.get("token", "").strip()
@@ -134,14 +115,12 @@ def index():
                 if not projects:
                     flash("Conexión OK, pero no tienes proyectos visibles.", "info")
                 else:
-                    arbol         = construir_arbol(projects)
-                    clasificacion = cargar_clasificacion()
+                    arbol = construir_arbol(projects)
             except requests.exceptions.RequestException as e:
                 error = f"Error al conectar con OpenProject: {str(e)}"
                 session.pop("op_token", None)
 
-    return render_template("index.html", arbol=arbol, error=error,
-                           clasificacion=clasificacion)
+    return render_template("index.html", arbol=arbol, error=error)
 
 
 @app.route("/logout")
@@ -151,11 +130,11 @@ def logout():
     return redirect(url_for("index"))
 
 
-# ─── FASE 2: Miembros y clasificación (llamadas AJAX) ─────────────────────────
+# ─── FASE 2: Miembros (llamadas AJAX) ─────────────────────────────────────────
 
 @app.route("/proyecto/<int:proyecto_id>/miembros")
 def proyecto_miembros(proyecto_id):
-    """Devuelve en JSON los jefes y directores del proyecto."""
+    """Devuelve jefes y directores del proyecto desde la API de memberships."""
     if not session.get("op_token"):
         return jsonify({"error": "No autenticado"}), 401
 
@@ -176,30 +155,6 @@ def proyecto_miembros(proyecto_id):
             directores.append({"nombre": nombre, "email": email})
 
     return jsonify({"jefes": jefes, "directores": directores})
-
-
-@app.route("/proyecto/<int:proyecto_id>/clasificar", methods=["POST"])
-def clasificar_proyecto(proyecto_id):
-    """Guarda la clasificación (servicio/area/ninguno) de un proyecto."""
-    if not session.get("op_token"):
-        return jsonify({"error": "No autenticado"}), 401
-
-    datos  = request.get_json()
-    tipo   = datos.get("tipo")
-    nombre = datos.get("nombre", "")
-
-    clasificacion = cargar_clasificacion()
-
-    if tipo == "ninguno":
-        clasificacion.pop(str(proyecto_id), None)
-    else:
-        clasificacion[str(proyecto_id)] = {
-            "tipo":            tipo,
-            "nombre_proyecto": nombre
-        }
-
-    guardar_clasificacion(clasificacion)
-    return jsonify({"ok": True, "tipo": tipo})
 
 
 if __name__ == "__main__":
