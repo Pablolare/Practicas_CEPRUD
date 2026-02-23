@@ -1,0 +1,18 @@
+{
+  "2": {
+    "tipo": "servicio",
+    "nombre_proyecto": "Scrum project"
+  },
+  "1": {
+    "tipo": "servicio",
+    "nombre_proyecto": "Demo project"
+  },
+  "5": {
+    "tipo": "servicio",
+    "nombre_proyecto": "Proyecto Vacio"
+  },
+  "3": {
+    "tipo": "area",
+    "nombre_proyecto": "Proyecto ejemplo"
+  }
+}

@@ -230,3 +230,241 @@ tbody tr:hover {
 tbody tr:last-child td {
     border-bottom: none;
 }
+
+/* ── Árbol de proyectos ── */
+.proyecto-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.proyecto-item:last-child {
+    border-bottom: none;
+}
+
+.proyecto-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-radius: 8px;
+}
+
+.proyecto-fila:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.proyecto-icono {
+    font-size: 0.7rem;
+    color: #475569;
+    transition: transform 0.2s ease;
+    min-width: 12px;
+}
+
+.proyecto-nombre {
+    font-weight: 600;
+    color: #f1f5f9;
+    flex: 1;
+}
+
+.proyecto-meta {
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+/* ── Panel expandido ── */
+.proyecto-panel {
+    display: none;
+    margin: 0 16px 12px 38px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.proyecto-panel.abierto {
+    display: block;
+}
+
+.miembros-panel {
+    padding: 16px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+/* ── Grupos de roles (Jefes / Directores) ── */
+.rol-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.rol-titulo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    width: fit-content;
+    margin-bottom: 4px;
+}
+
+.rol-servicio {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.rol-area {
+    background: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* ── Persona dentro del panel ── */
+.persona-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.persona-nombre {
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+}
+
+.persona-email {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+/* ── Estados del panel ── */
+.cargando {
+    padding: 16px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.sin-responsables {
+    padding: 16px;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* ── Badge en la fila del proyecto ── */
+.badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.badge-ninguno {
+    display: none;
+}
+
+.badge-servicio {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-area {
+    background: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* ── Botones de clasificación en el panel ── */
+.clasificacion-grupo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.clasificacion-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* Segmented control wrapper */
+.clasificacion-segmento {
+    display: flex;
+}
+
+.btn-clasificar {
+    padding: 6px 18px;
+    border-radius: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.04);
+    color: #64748b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: none;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    font-family: inherit;
+    line-height: 1;
+}
+
+.btn-clasificar:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.btn-clasificar:last-child {
+    border-radius: 0 8px 8px 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-clasificar:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #cbd5e1;
+}
+
+.btn-clasificar.activo[data-tipo="ninguno"] {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.18);
+    border-right: none;
+}
+
+.btn-clasificar.activo[data-tipo="ninguno"]:last-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.btn-clasificar.activo[data-tipo="servicio"] {
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.35);
+    border-right: none;
+}
+
+.btn-clasificar.activo[data-tipo="servicio"]:last-child {
+    border-right: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.btn-clasificar.activo[data-tipo="area"] {
+    background: rgba(168, 85, 247, 0.18);
+    color: #d8b4fe;
+    border-color: rgba(168, 85, 247, 0.35);
+    border-right: none;
+}
+
+.btn-clasificar.activo[data-tipo="area"]:last-child {
+    border-right: 1px solid rgba(168, 85, 247, 0.35);
+}

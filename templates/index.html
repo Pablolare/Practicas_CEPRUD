@@ -7,67 +7,212 @@
 </head>
 <body>
 
-    <div class="container">
+<div class="container">
 
-        {% if projects %}
+    {% if arbol %}
 
-            <!-- VISTA: tabla de proyectos -->
-            <div class="cabecera">
-                <h1>Proyectos visibles</h1>
-                <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
+        <div class="cabecera">
+            <h1>Proyectos visibles</h1>
+            <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
+        </div>
+
+        {% macro render_proyecto(p, nivel, clasificacion) %}
+
+        {% set clas = clasificacion.get(p.id | string) %}
+
+        <div class="proyecto-item" data-nivel="{{ nivel }}">
+
+            <div class="proyecto-fila" data-id="{{ p.id }}">
+                <span class="proyecto-icono">▶</span>
+                <span class="proyecto-nombre">{{ p.name }}</span>
+                {% if clas %}
+                    <span class="badge badge-{{ clas.tipo }}" id="badge-{{ p.id }}">
+                        {{ "Servicio" if clas.tipo == "servicio" else "Área" }}
+                    </span>
+                {% else %}
+                    <span class="badge badge-ninguno" id="badge-{{ p.id }}"></span>
+                {% endif %}
+                <span class="proyecto-meta">ID {{ p.id }} · {{ p.identifier }}</span>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Identifier</th>
-                        <th>Activo</th>
-                        <th>Público</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in projects %}
-                    <tr>
-                        <td>{{ p.id }}</td>
-                        <td>{{ p.name }}</td>
-                        <td>{{ p.identifier }}</td>
-                        <td>{{ "Sí" if p.active else "No" }}</td>
-                        <td>{{ "Sí" if p.public else "No" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="proyecto-panel" id="panel-{{ p.id }}"></div>
 
-        {% else %}
+        </div>
 
-            <!-- VISTA: formulario del token -->
-            <h1>OpenProject Reporter</h1>
-            <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+        {% for hijo in p.children %}
+            {{ render_proyecto(hijo, nivel + 1, clasificacion) }}
+        {% endfor %}
 
-            <!-- Mensajes flash (ej: "Sesión cerrada", "Sin proyectos visibles") -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    <p class="alerta {{ category }}">{{ message }}</p>
-                {% endfor %}
-            {% endwith %}
+        {% endmacro %}
 
-            <!-- Error directo del servidor (token vacío, fallo de conexión) -->
-            {% if error %}
-                <p class="alerta error">{{ error }}</p>
-            {% endif %}
+        {% for proyecto in arbol %}
+            {{ render_proyecto(proyecto, 0, clasificacion) }}
+        {% endfor %}
 
-            <form action="{{ url_for('index') }}" method="POST">
-                <label for="token">Token API</label>
-                <input type="password" id="token" name="token"
-                       placeholder="Tu token de OpenProject" required>
-                <button type="submit">Conectar</button>
-            </form>
+    {% else %}
 
+        <h1>OpenProject Reporter</h1>
+        <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <p class="alerta {{ category }}">{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        {% if error %}
+            <p class="alerta error">{{ error }}</p>
         {% endif %}
 
-    </div>
+        <form action="{{ url_for('index') }}" method="POST">
+            <label for="token">Token API</label>
+            <input type="password" id="token" name="token"
+                   placeholder="Tu token de OpenProject" required>
+            <button type="submit">Conectar</button>
+        </form>
+
+    {% endif %}
+
+</div>
+
+<!-- Datos de clasificación del servidor. type="application/json" evita que el linter lo trate como JS -->
+<script type="application/json" id="clasificacion-data">{{ clasificacion | tojson }}</script>
+
+<script>
+    const cargados = {};
+
+    // Lee los datos de clasificación del servidor
+    const clasificacion = JSON.parse(document.getElementById('clasificacion-data').textContent);
+
+    // Aplica sangría según data-nivel
+    document.querySelectorAll('.proyecto-item').forEach(item => {
+        const nivel = parseInt(item.dataset.nivel) || 0;
+        item.style.paddingLeft = (nivel * 20) + 'px';
+    });
+
+    // Asigna el click a cada fila
+    document.querySelectorAll('.proyecto-fila').forEach(fila => {
+        fila.addEventListener('click', function () {
+            togglePanel(this.dataset.id, this.dataset.nombre);
+        });
+    });
+
+    function togglePanel(id, nombre) {
+        const panel = document.getElementById('panel-' + id);
+        const fila  = panel.previousElementSibling;
+
+        if (panel.classList.contains('abierto')) {
+            panel.classList.remove('abierto');
+            fila.querySelector('.proyecto-icono').textContent = '▶';
+            return;
+        }
+
+        panel.classList.add('abierto');
+        fila.querySelector('.proyecto-icono').textContent = '▼';
+
+        if (cargados[id]) return;
+
+        panel.innerHTML = '<div class="cargando">Cargando...</div>';
+
+        fetch('/proyecto/' + id + '/miembros')
+            .then(r => r.json())
+            .then(data => {
+                const tipoActual = clasificacion[id] ? clasificacion[id].tipo : 'ninguno';
+                const nombreProyecto = fila.querySelector('.proyecto-nombre').textContent;
+
+                // Botones de clasificación
+                let html = '<div class="clasificacion-grupo">';
+                html += '<span class="clasificacion-label">Clasificar</span>';
+                html += '<div class="clasificacion-segmento">';
+                [['ninguno', 'Ninguno'], ['servicio', 'Servicio'], ['area', 'Área']].forEach(([tipo, label]) => {
+                    const activo = tipoActual === tipo ? 'activo' : '';
+                    html += `<button class="btn-clasificar ${activo}" data-id="${id}" data-tipo="${tipo}" data-nombre="${nombreProyecto}">${label}</button>`;
+                });
+                html += '</div></div>';
+
+                // Jefes de proyecto
+                if (data.jefes.length) {
+                    html += '<div class="rol-grupo">';
+                    html += '<span class="rol-titulo rol-servicio">Jefes de proyecto</span>';
+                    data.jefes.forEach(p => {
+                        html += `<div class="persona-item">
+                            <span class="persona-nombre">${p.nombre}</span>
+                            ${p.email ? `<span class="persona-email">${p.email}</span>` : ''}
+                        </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                // Directores técnicos
+                if (data.directores.length) {
+                    html += '<div class="rol-grupo">';
+                    html += '<span class="rol-titulo rol-area">Directores técnicos</span>';
+                    data.directores.forEach(p => {
+                        html += `<div class="persona-item">
+                            <span class="persona-nombre">${p.nombre}</span>
+                            ${p.email ? `<span class="persona-email">${p.email}</span>` : ''}
+                        </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (!data.jefes.length && !data.directores.length) {
+                    html += '<p class="sin-responsables">No hay jefes ni directores asignados.</p>';
+                }
+
+                panel.innerHTML = '<div class="miembros-panel">' + html + '</div>';
+                cargados[id] = true;
+            })
+            .catch(() => {
+                panel.innerHTML = '<p class="sin-responsables">Error al cargar los miembros.</p>';
+            });
+    }
+
+    // Click en los botones de clasificación (delegado al document)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-clasificar');
+        if (!btn) return;
+
+        const id     = btn.dataset.id;
+        const tipo   = btn.dataset.tipo;
+        const nombre = btn.dataset.nombre;
+
+        fetch('/proyecto/' + id + '/clasificar', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ tipo, nombre })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) return;
+
+            // Actualiza el badge en la fila
+            const badge = document.getElementById('badge-' + id);
+            if (badge) {
+                if (tipo === 'ninguno') {
+                    badge.className   = 'badge badge-ninguno';
+                    badge.textContent = '';
+                } else {
+                    badge.className   = 'badge badge-' + tipo;
+                    badge.textContent = tipo === 'servicio' ? 'Servicio' : 'Área';
+                }
+            }
+
+            // Marca el botón activo
+            const panel = document.getElementById('panel-' + id);
+            panel.querySelectorAll('.btn-clasificar').forEach(b => {
+                b.classList.toggle('activo', b.dataset.tipo === tipo);
+            });
+
+            // Actualiza el estado local
+            if (tipo === 'ninguno') {
+                delete clasificacion[id];
+            } else {
+                clasificacion[id] = { tipo, nombre_proyecto: nombre };
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
