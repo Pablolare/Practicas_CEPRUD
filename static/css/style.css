@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600&display=swap');
 
 * {
     box-sizing: border-box;
@@ -6,15 +6,15 @@
     padding: 0;
 }
 
-/* ── Body: centra el contenedor en pantalla ── */
+/* ── Body ── */
 body {
-    font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at top left, #1e293b 0%, #0f172a 100%);
-    color: #e2e8f0;
+    font-family: 'DM Sans', sans-serif;
+    background: radial-gradient(circle at top left, #e0eaff 0%, #f0f4ff 60%, #faf5ff 100%);
+    color: #1e293b;
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: flex-start;       /* flex-start permite scroll si la tabla es larga */
+    align-items: flex-start;
     padding: 40px 20px;
 }
 
@@ -22,13 +22,13 @@ body {
 .container {
     width: 100%;
     max-width: 900px;
-    background: rgba(30, 41, 59, 0.7);
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.12);
     padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1), 0 1px 3px rgba(0,0,0,0.06);
     animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;
     transform: translateY(20px);
@@ -46,16 +46,16 @@ h1 {
     font-size: 2.25rem;
     font-weight: 600;
     margin-bottom: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+    background: linear-gradient(135deg, #3730a3 0%, #6366f1 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.025em;
 }
 
-/* ── Párrafo descriptivo (solo el de la vista del formulario) ── */
+/* ── Párrafo descriptivo ── */
 .container > p {
     margin-bottom: 24px;
-    color: #94a3b8;
+    color: #64748b;
     font-size: 1.05rem;
     line-height: 1.6;
 }
@@ -72,31 +72,31 @@ form {
 label {
     font-weight: 600;
     font-size: 0.875rem;
-    color: #cbd5e1;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 input {
     padding: 14px 18px;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(241, 245, 249, 0.8);
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
     font-size: 1rem;
-    color: #f8fafc;
+    color: #1e293b;
     transition: all 0.3s ease;
     outline: none;
     font-family: inherit;
 }
 
 input:focus {
-    border-color: #3b82f6;
-    background: rgba(15, 23, 42, 0.9);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    border-color: #6366f1;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
 }
 
 input::placeholder {
-    color: #475569;
+    color: #94a3b8;
 }
 
 /* ── Botones ── */
@@ -118,35 +118,35 @@ button,
 }
 
 button {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
     color: white;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 button:hover {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
 }
 
 button:active {
     transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
 }
 
 .btn-secundario {
-    background: rgba(255, 255, 255, 0.05);
-    color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(99, 102, 241, 0.06);
+    color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .btn-secundario:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(99, 102, 241, 0.12);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.1);
 }
 
-/* ── Alertas: flash messages y errores ── */
+/* ── Alertas ── */
 .alerta {
     padding: 14px 18px;
     border-radius: 10px;
@@ -163,57 +163,57 @@ button:active {
 }
 
 .alerta.error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #fecaca;
+    background: rgba(239, 68, 68, 0.07);
+    color: #b91c1c;
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-left: 4px solid #ef4444;
 }
 
 .alerta.info {
-    background: rgba(59, 130, 246, 0.1);
-    color: #bfdbfe;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-left: 4px solid #3b82f6;
+    background: rgba(99, 102, 241, 0.07);
+    color: #3730a3;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-left: 4px solid #6366f1;
 }
 
-/* ── Cabecera de la vista de proyectos (título + botón desconectar) ── */
+/* ── Cabecera ── */
 .cabecera {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 .cabecera h1 {
     margin-bottom: 0;
 }
 
-/* ── Tabla de proyectos ── */
+/* ── Tabla ── */
 table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.95rem;
-    color: #e2e8f0;
+    color: #1e293b;
     border-radius: 12px;
     overflow: hidden;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 th,
 td {
     padding: 16px 20px;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.07);
 }
 
 th {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(99, 102, 241, 0.04);
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     font-size: 0.85rem;
     letter-spacing: 0.05em;
@@ -224,7 +224,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(99, 102, 241, 0.05);
 }
 
 tbody tr:last-child td {
@@ -233,7 +233,7 @@ tbody tr:last-child td {
 
 /* ── Árbol de proyectos ── */
 .proyecto-item {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.07);
 }
 
 .proyecto-item:last-child {
@@ -251,33 +251,33 @@ tbody tr:last-child td {
 }
 
 .proyecto-fila:hover {
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(99, 102, 241, 0.06);
 }
 
 .proyecto-icono {
     font-size: 0.7rem;
-    color: #475569;
+    color: #94a3b8;
     transition: transform 0.2s ease;
     min-width: 12px;
 }
 
 .proyecto-nombre {
     font-weight: 600;
-    color: #f1f5f9;
+    color: #1e293b;
     flex: 1;
 }
 
 .proyecto-meta {
     font-size: 0.8rem;
-    color: #475569;
+    color: #94a3b8;
 }
 
 /* ── Panel expandido ── */
 .proyecto-panel {
     display: none;
     margin: 0 16px 12px 38px;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(248, 250, 255, 0.8);
+    border: 1px solid rgba(99, 102, 241, 0.1);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -293,7 +293,7 @@ tbody tr:last-child td {
     flex-wrap: wrap;
 }
 
-/* ── Grupos de roles (Jefes / Directores) ── */
+/* ── Grupos de roles ── */
 .rol-grupo {
     display: flex;
     flex-direction: column;
@@ -313,54 +313,54 @@ tbody tr:last-child td {
 }
 
 .rol-servicio {
-    background: rgba(34, 197, 94, 0.15);
-    color: #86efac;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .rol-area {
-    background: rgba(168, 85, 247, 0.15);
-    color: #d8b4fe;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(139, 92, 246, 0.1);
+    color: #6d28d9;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
-/* ── Persona dentro del panel ── */
+/* ── Persona ── */
 .persona-item {
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.7);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 .persona-nombre {
     font-weight: 600;
-    color: #e2e8f0;
+    color: #1e293b;
     font-size: 0.9rem;
 }
 
 .persona-email {
-    color: #64748b;
+    color: #94a3b8;
     font-size: 0.8rem;
 }
 
 /* ── Estados del panel ── */
 .cargando {
     padding: 16px;
-    color: #64748b;
+    color: #94a3b8;
     font-size: 0.9rem;
 }
 
 .sin-responsables {
     padding: 16px;
-    color: #64748b;
+    color: #94a3b8;
     font-size: 0.9rem;
     font-style: italic;
 }
 
-/* ── Badge en la fila del proyecto ── */
+/* ── Badges ── */
 .badge {
     padding: 2px 10px;
     border-radius: 999px;
@@ -373,24 +373,24 @@ tbody tr:last-child td {
 }
 
 .badge-servicio {
-    background: rgba(34, 197, 94, 0.15);
-    color: #86efac;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .badge-area {
-    background: rgba(168, 85, 247, 0.15);
-    color: #d8b4fe;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(139, 92, 246, 0.1);
+    color: #6d28d9;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
-/* ── Botones de clasificación en el panel ── */
+/* ── Botones de clasificación ── */
 .clasificacion-grupo {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.07);
 }
 
 .clasificacion-label {
@@ -398,11 +398,10 @@ tbody tr:last-child td {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #475569;
+    color: #94a3b8;
     white-space: nowrap;
 }
 
-/* Segmented control wrapper */
 .clasificacion-segmento {
     display: flex;
 }
@@ -413,9 +412,9 @@ tbody tr:last-child td {
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.04);
-    color: #64748b;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(99, 102, 241, 0.04);
+    color: #94a3b8;
+    border: 1px solid rgba(99, 102, 241, 0.12);
     border-right: none;
     transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-family: inherit;
@@ -428,43 +427,43 @@ tbody tr:last-child td {
 
 .btn-clasificar:last-child {
     border-radius: 0 8px 8px 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .btn-clasificar:hover {
-    background: rgba(255, 255, 255, 0.09);
-    color: #cbd5e1;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
 }
 
 .btn-clasificar.activo[data-tipo="ninguno"] {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(99, 102, 241, 0.1);
+    color: #3730a3;
+    border-color: rgba(99, 102, 241, 0.25);
     border-right: none;
 }
 
 .btn-clasificar.activo[data-tipo="ninguno"]:last-child {
-    border-right: 1px solid rgba(255, 255, 255, 0.18);
+    border-right: 1px solid rgba(99, 102, 241, 0.25);
 }
 
 .btn-clasificar.activo[data-tipo="servicio"] {
-    background: rgba(34, 197, 94, 0.18);
-    color: #86efac;
-    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.3);
     border-right: none;
 }
 
 .btn-clasificar.activo[data-tipo="servicio"]:last-child {
-    border-right: 1px solid rgba(34, 197, 94, 0.35);
+    border-right: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .btn-clasificar.activo[data-tipo="area"] {
-    background: rgba(168, 85, 247, 0.18);
-    color: #d8b4fe;
-    border-color: rgba(168, 85, 247, 0.35);
+    background: rgba(139, 92, 246, 0.1);
+    color: #6d28d9;
+    border-color: rgba(139, 92, 246, 0.3);
     border-right: none;
 }
 
 .btn-clasificar.activo[data-tipo="area"]:last-child {
-    border-right: 1px solid rgba(168, 85, 247, 0.35);
+    border-right: 1px solid rgba(139, 92, 246, 0.3);
 }

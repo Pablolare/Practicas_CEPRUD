@@ -3,3 +3,8 @@ venv/
 
 # Archivos Python cache
 __pycache__/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
