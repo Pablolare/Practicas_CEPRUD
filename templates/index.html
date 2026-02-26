@@ -15,7 +15,10 @@
 
         <div class="cabecera">
             <h1>Proyectos visibles</h1>
-            <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
+            <div class="cabecera-acciones">
+                <a href="{{ url_for('informe') }}" class="btn-informe">Generar informe</a>
+                <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
+            </div>
         </div>
 
         <!-- Renderiza el proyecto creando una macro que recibe como parámetro un objeto p, y el nivel de profundidad del árbol. -->

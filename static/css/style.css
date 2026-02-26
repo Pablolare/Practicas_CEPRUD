@@ -190,6 +190,361 @@ button:active {
     margin-bottom: 0;
 }
 
+.cabecera-acciones {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* ── Botón Generar informe ── */
+.btn-informe {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+}
+
+.btn-informe:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+/* ── Formulario del informe ── */
+.form-informe {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.form-seccion {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.proyectos-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(241, 245, 249, 0.6);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.check-item:hover {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.check-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    accent-color: #6366f1;
+    border: none;
+    background: none;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.dias-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dias-control input {
+    width: 120px;
+}
+
+.dias-hint {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* ── Cabecera de resultado ── */
+.informe-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.informe-cabecera h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.btn-pdf {
+    padding: 9px 20px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    font-family: inherit;
+}
+
+.btn-pdf:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+}
+
+/* ── Bloques de proyecto en el informe ── */
+.informe-proyecto {
+    margin-bottom: 28px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.informe-proyecto-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: rgba(99, 102, 241, 0.04);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.informe-proyecto-nombre {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+}
+
+.informe-total-badge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    padding: 3px 12px;
+    border-radius: 999px;
+}
+
+.celda-persona {
+    font-weight: 600;
+    vertical-align: top;
+}
+
+.celda-paquete {
+    color: #64748b;
+    font-size: 0.88rem;
+}
+
+.subtotal-persona {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* ── Columna horas (alineada a la derecha) ── */
+.col-horas {
+    text-align: right;
+    font-weight: 600;
+}
+
+/* ══════════════════════════════════════════
+   Página de informe imprimible (informe_ver)
+   ══════════════════════════════════════════ */
+
+body.pagina-imprimible {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 40px;
+    display: block;
+    align-items: unset;
+    justify-content: unset;
+}
+
+.cabecera-informe {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.cabecera-informe h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    background: none;
+    -webkit-text-fill-color: #1e293b;
+}
+
+.cabecera-informe .meta {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-top: 6px;
+}
+
+.btn-imprimir {
+    padding: 10px 22px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: none;
+    transform: none;
+}
+
+.proyecto-bloque {
+    margin-bottom: 36px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.proyecto-bloque-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.proyecto-bloque-nombre {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.proyecto-bloque-total {
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: #4f46e5;
+    color: white;
+    padding: 4px 14px;
+    border-radius: 999px;
+}
+
+body.pagina-imprimible table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+}
+
+body.pagina-imprimible th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    padding: 12px 24px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+body.pagina-imprimible td {
+    padding: 12px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+body.pagina-imprimible tr:last-child td {
+    border-bottom: none;
+}
+
+body.pagina-imprimible .sin-datos {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* ── Depuración ── */
+.debug-lista {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.debug-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: monospace;
+}
+
+.debug-ok {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.debug-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.debug-texto-ok    { color: #15803d; }
+.debug-texto-error { color: #dc2626; }
+
+@media print {
+    body.pagina-imprimible {
+        padding: 20px;
+        background: white;
+    }
+    .btn-imprimir {
+        display: none;
+    }
+    .proyecto-bloque {
+        break-inside: avoid;
+    }
+}
+
 /* ── Tabla ── */
 table {
     width: 100%;
