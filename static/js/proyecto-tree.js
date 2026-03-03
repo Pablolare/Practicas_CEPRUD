@@ -80,7 +80,7 @@ const datosPorId = {};  // guarda grupos por proyecto tras la primera carga
 
         // Muestra el grupo correspondiente
         const personas = tipo === 'servicio' ? data.jefes : data.directores;
-        const titulo   = tipo === 'servicio' ? 'Jefes de proyecto' : 'Directores técnicos';
+        const titulo   = tipo === 'servicio' ? 'Jefes de proyecto' : 'Directores tecnicos';
         const claseRol = tipo === 'servicio' ? 'rol-servicio' : 'rol-area';
         const resultado = document.getElementById('resultado-' + id);
 

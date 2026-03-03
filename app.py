@@ -14,7 +14,7 @@ app.secret_key = "secret_key"
 
 BASE_URL          = "https://ofiwebsubdir.ugr.es"
 ROL_JEFE_SERVICIO = "Jefe de proyecto"
-ROL_DIRECTOR_AREA = "Director técnico"
+ROL_DIRECTOR_AREA = "Director tecnico"
 
 # ─── Estado global del scheduler ──────────────────────────────────────────────
 # El token no está disponible en tareas en background (sin sesión Flask),
