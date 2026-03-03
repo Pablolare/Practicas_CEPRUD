@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Programar envío – OpenProject Reporter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="cabecera">
+        <h1>Programar envío de informes</h1>
+        <a href="{{ url_for('index') }}" class="btn-secundario">← Volver</a>
+    </div>
+
+    {% if mensaje %}
+    <div class="alerta-info">{{ mensaje }}</div>
+    {% endif %}
+
+    {% if proximo %}
+    <div class="alerta-ok">Próximo envío automático: <strong>{{ proximo }}</strong></div>
+    {% endif %}
+
+    <!-- Formulario de configuración -->
+    <form id="form-programar" action="{{ url_for('programar') }}" method="POST" class="form-informe">
+        <input type="hidden" name="accion"    value="guardar">
+        <input type="hidden" id="smtp_host"   name="smtp_host">
+        <input type="hidden" id="smtp_port"   name="smtp_port">
+
+        <h2 class="form-titulo">Cuenta de correo</h2>
+
+        <!-- Selector de proveedor -->
+        <div class="form-seccion">
+            <label for="proveedor">Proveedor de correo</label>
+            <select id="proveedor" name="proveedor" class="select-proveedor">
+                <option value="gmail">Gmail</option>
+                <option value="outlook">Outlook / Hotmail</option>
+                <option value="yahoo">Yahoo Mail</option>
+                <option value="otro">Otro (servidor corporativo)</option>
+            </select>
+        </div>
+
+        <!-- Campos manuales: solo visibles con "Otro" -->
+        <div id="seccion-manual" class="form-fila" style="display:none">
+            <div class="form-seccion">
+                <label for="smtp_host_manual">Servidor SMTP</label>
+                <input type="text" id="smtp_host_manual"
+                       placeholder="smtp.miempresa.com"
+                       value="{{ config.smtp_host if config else '' }}">
+            </div>
+            <div class="form-seccion form-seccion-corta">
+                <label for="smtp_port_manual">Puerto</label>
+                <input type="number" id="smtp_port_manual"
+                       placeholder="587" min="1" max="65535"
+                       value="{{ config.smtp_port if config else '587' }}">
+            </div>
+        </div>
+
+        <!-- Dirección de correo -->
+        <div class="form-seccion">
+            <label for="smtp_user">Tu dirección de correo</label>
+            <input type="email" id="smtp_user" name="smtp_user"
+                   value="{{ config.smtp_user if config else '' }}"
+                   placeholder="tu@correo.com">
+        </div>
+
+        <!-- Contraseña -->
+        <div class="form-seccion">
+            <label for="smtp_pass">Contraseña</label>
+            <input type="password" id="smtp_pass" name="smtp_pass"
+                   placeholder="••••••••">
+            <p id="nota-pass" class="nota-campo"></p>
+        </div>
+
+        <h2 class="form-titulo">Informe y frecuencia</h2>
+
+        <div class="form-fila">
+            <div class="form-seccion">
+                <label for="dias">Días de historial del informe
+                    <span class="dias-hint">(vacío = todo el historial)</span>
+                </label>
+                <input type="number" id="dias" name="dias"
+                       value="{{ config.dias if config and config.dias else '' }}"
+                       min="1" max="9999" placeholder="Sin límite">
+            </div>
+            <div class="form-seccion form-seccion-corta">
+                <label for="frecuencia">Enviar cada (días)</label>
+                <input type="number" id="frecuencia" name="frecuencia"
+                       value="7" min="1" max="365">
+            </div>
+        </div>
+
+        <h2 class="form-titulo">Proyectos destinatarios</h2>
+        <p class="dias-hint">
+            Marca los proyectos cuyos responsables recibirán el correo.
+            Si no marcas ninguno, se envía a los responsables de todos los proyectos.
+        </p>
+
+        {% macro nodo_check(p) %}
+        <div class="arbol-sel-nodo" data-id="{{ p.id }}">
+            <label class="arbol-sel-label">
+                <input type="checkbox" class="arbol-sel-check"
+                       name="proyectos_sel" value="{{ p.id }}"
+                       {% if p.id in seleccionados %}checked{% endif %}>
+                <span>{{ p.name }}</span>
+            </label>
+            {% if p.children %}
+            <div class="arbol-sel-hijos">
+                {% for hijo in p.children %}{{ nodo_check(hijo) }}{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endmacro %}
+
+        <div class="arbol-sel">
+            {% if arbol %}
+                <label class="arbol-sel-label arbol-sel-todos">
+                    <input type="checkbox" id="sel-todos" class="arbol-sel-check">
+                    <span><strong>Todos los proyectos</strong></span>
+                </label>
+                <hr class="arbol-sel-separador">
+                {% for raiz in arbol %}{{ nodo_check(raiz) }}{% endfor %}
+            {% else %}
+                <p class="dias-hint">Haz login para ver los proyectos disponibles.</p>
+            {% endif %}
+        </div>
+
+        <button type="submit">Guardar y activar</button>
+    </form>
+
+    <!-- Acciones rápidas -->
+    <div class="acciones-programar">
+        <form action="{{ url_for('programar') }}" method="POST">
+            <input type="hidden" name="accion" value="enviar_ahora">
+            <button type="submit" class="btn-secundario">Enviar informe ahora</button>
+        </form>
+
+        <form action="{{ url_for('programar') }}" method="POST">
+            <input type="hidden" name="accion" value="desactivar">
+            <button type="submit" class="btn-peligro">Desactivar envío automático</button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+const PROVEEDORES = {
+    gmail:   { host: "smtp.gmail.com",      port: 587 },
+    outlook: { host: "smtp.office365.com",  port: 587 },
+    yahoo:   { host: "smtp.mail.yahoo.com", port: 587 },
+    otro:    { host: "",                     port: 587 }
+};
+
+const NOTAS_PASS = {
+    gmail:   "En Gmail <strong>no uses tu contraseña habitual</strong>. Ve a tu cuenta Google → Seguridad → Contraseñas de aplicaciones, genera una y pégala aquí.",
+    outlook: "Introduce la contraseña de tu cuenta Outlook/Hotmail. La app la necesita para enviar correos en tu nombre.",
+    yahoo:   "En Yahoo <strong>no uses tu contraseña habitual</strong>. Ve a Seguridad de la cuenta → Contraseñas de aplicaciones, genera una y pégala aquí.",
+    otro:    "Introduce la contraseña de tu cuenta de correo corporativa."
+};
+
+const selProveedor  = document.getElementById("proveedor");
+const secManual     = document.getElementById("seccion-manual");
+const notaPass      = document.getElementById("nota-pass");
+const hiddenHost    = document.getElementById("smtp_host");
+const hiddenPort    = document.getElementById("smtp_port");
+const manualHost    = document.getElementById("smtp_host_manual");
+const manualPort    = document.getElementById("smtp_port_manual");
+
+function aplicarProveedor(valor) {
+    const cfg = PROVEEDORES[valor];
+    if (valor === "otro") {
+        secManual.style.display = "flex";
+        hiddenHost.value = manualHost.value;
+        hiddenPort.value = manualPort.value;
+    } else {
+        secManual.style.display = "none";
+        hiddenHost.value = cfg.host;
+        hiddenPort.value = cfg.port;
+    }
+    notaPass.innerHTML = NOTAS_PASS[valor] || "";
+}
+
+// Detectar proveedor actual si hay config guardada
+const hostGuardado = "{{ config.smtp_host if config else '' }}";
+let proveedorInicial = "gmail";
+if (hostGuardado) {
+    const entrada = Object.entries(PROVEEDORES).find(([, v]) => v.host === hostGuardado);
+    proveedorInicial = entrada ? entrada[0] : "otro";
+}
+selProveedor.value = proveedorInicial;
+aplicarProveedor(proveedorInicial);
+
+selProveedor.addEventListener("change", () => aplicarProveedor(selProveedor.value));
+
+// Sincronizar campos manuales en tiempo real
+manualHost.addEventListener("input", () => { hiddenHost.value = manualHost.value; });
+manualPort.addEventListener("input", () => { hiddenPort.value = manualPort.value; });
+
+// Asegurar sync antes del submit
+document.getElementById("form-programar").addEventListener("submit", () => {
+    if (selProveedor.value === "otro") {
+        hiddenHost.value = manualHost.value;
+        hiddenPort.value = manualPort.value;
+    }
+});
+
+// ── Árbol de proyectos: lógica padre-hijo ─────────────────────────
+function setDescendientes(nodo, checked) {
+    nodo.querySelectorAll(".arbol-sel-check").forEach(cb => {
+        cb.checked = checked;
+        cb.indeterminate = false;
+    });
+}
+
+function actualizarPadre(nodo) {
+    const padre = nodo.closest(".arbol-sel-hijos")?.closest(".arbol-sel-nodo");
+    if (!padre) return;
+    const cbPadre = padre.querySelector(":scope > label > .arbol-sel-check");
+    const hijos   = padre.querySelectorAll(".arbol-sel-hijos .arbol-sel-check");
+    const total   = hijos.length;
+    const marcados = [...hijos].filter(c => c.checked).length;
+    if (marcados === 0) {
+        cbPadre.checked       = false;
+        cbPadre.indeterminate = false;
+    } else if (marcados === total) {
+        cbPadre.checked       = true;
+        cbPadre.indeterminate = false;
+    } else {
+        cbPadre.checked       = false;
+        cbPadre.indeterminate = true;
+    }
+    actualizarPadre(padre);
+}
+
+// Checkbox "Todos los proyectos"
+const cbTodos = document.getElementById("sel-todos");
+const cbsProyecto = () => document.querySelectorAll(".arbol-sel-nodo .arbol-sel-check");
+
+function actualizarTodos() {
+    const todos = [...cbsProyecto()];
+    const marcados = todos.filter(c => c.checked).length;
+    if (marcados === 0) {
+        cbTodos.checked = false; cbTodos.indeterminate = false;
+    } else if (marcados === todos.length) {
+        cbTodos.checked = true;  cbTodos.indeterminate = false;
+    } else {
+        cbTodos.checked = false; cbTodos.indeterminate = true;
+    }
+}
+
+cbTodos.addEventListener("change", function () {
+    cbsProyecto().forEach(cb => { cb.checked = this.checked; cb.indeterminate = false; });
+});
+
+document.querySelectorAll(".arbol-sel-nodo .arbol-sel-check").forEach(cb => {
+    cb.addEventListener("change", function () {
+        const nodo = this.closest(".arbol-sel-nodo");
+        setDescendientes(nodo, this.checked);
+        this.checked       = this.checked;
+        this.indeterminate = false;
+        actualizarPadre(nodo);
+        actualizarTodos();
+    });
+});
+</script>
+
+</body>
+</html>
