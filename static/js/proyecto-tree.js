@@ -31,7 +31,7 @@ const datosPorId = {};  // guarda grupos por proyecto tras la primera carga
 
         panel.innerHTML = '<div class="cargando">Cargando...</div>';
 
-        fetch('/proyecto/' + id + '/miembros')
+        fetch(BASE_PATH + '/proyecto/' + id + '/miembros')
             .then(r => r.json())
             .then(data => {
                 datosPorId[id] = data;
