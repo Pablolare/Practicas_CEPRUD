@@ -165,8 +165,14 @@ def obtener_time_entries(proyecto_id, fecha_desde=None):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    arbol = []
     error = None
+
+    # Si ya hay sesión activa, reconstruimos el árbol desde los datos guardados
+    if request.method == "GET" and session.get("op_token") and session.get("proyectos"):
+        arbol = construir_arbol_sesion(session["proyectos"])
+        return render_template("index.html", arbol=arbol, error=error)
+
+    arbol = []
 
     if request.method == "POST":
         token = request.form.get("token", "").strip()
