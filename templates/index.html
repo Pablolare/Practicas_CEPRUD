@@ -7,67 +7,78 @@
 </head>
 <body>
 
-    <div class="container">
+<div class="container">
 
-        {% if projects %}
+    <!-- Si hay proyectos visibles, los muestra; si no, muestra el formulario de conexión -->
 
-            <!-- VISTA: tabla de proyectos -->
-            <div class="cabecera">
-                <h1>Proyectos visibles</h1>
+    {% if arbol %}
+
+        <div class="cabecera">
+            <h1>Proyectos visibles</h1>
+            <div class="cabecera-acciones">
+                <a href="{{ url_for('informe') }}" class="btn-informe">Generar informe</a>
+                <a href="{{ url_for('programar') }}" class="btn-programar">Programar envío</a>
                 <a href="{{ url_for('logout') }}" class="btn-secundario">Desconectar</a>
             </div>
+        </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Identifier</th>
-                        <th>Activo</th>
-                        <th>Público</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in projects %}
-                    <tr>
-                        <td>{{ p.id }}</td>
-                        <td>{{ p.name }}</td>
-                        <td>{{ p.identifier }}</td>
-                        <td>{{ "Sí" if p.active else "No" }}</td>
-                        <td>{{ "Sí" if p.public else "No" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Renderiza el proyecto creando una macro que recibe como parámetro un objeto p, y el nivel de profundidad del árbol. -->
+        {% macro render_proyecto(p, nivel) %}
 
-        {% else %}
+        <div class="proyecto-item" data-nivel="{{ nivel }}">
 
-            <!-- VISTA: formulario del token -->
-            <h1>OpenProject Reporter</h1>
-            <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+            <div class="proyecto-fila" data-id="{{ p.id }}">
+                <span class="proyecto-icono">▶</span>
+                <span class="proyecto-nombre">{{ p.name }}</span>
+                <span class="badge badge-ninguno" id="badge-{{ p.id }}"></span>
+                <span class="proyecto-meta">ID {{ p.id }} · {{ p.identifier }}</span>
+            </div>
 
-            <!-- Mensajes flash (ej: "Sesión cerrada", "Sin proyectos visibles") -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    <p class="alerta {{ category }}">{{ message }}</p>
-                {% endfor %}
-            {% endwith %}
+            <div class="proyecto-panel" id="panel-{{ p.id }}"></div>
 
-            <!-- Error directo del servidor (token vacío, fallo de conexión) -->
-            {% if error %}
-                <p class="alerta error">{{ error }}</p>
-            {% endif %}
+        </div>
+        {% for hijo in p.children %}
+            <!-- Renderiza a los hijos. -->
+            {{ render_proyecto(hijo, nivel + 1) }}
+        {% endfor %}
 
-            <form action="{{ url_for('index') }}" method="POST">
-                <label for="token">Token API</label>
-                <input type="password" id="token" name="token"
-                       placeholder="Tu token de OpenProject" required>
-                <button type="submit">Conectar</button>
-            </form>
+        {% endmacro %}
+        <!-- Crea el arbol. -->
+        {% for proyecto in arbol %}
+            {{ render_proyecto(proyecto, 0) }}
+        {% endfor %}
 
+    {% else %}
+
+        <h1>OpenProject Reporter</h1>
+        <p>Introduce tu token de API para conectarte y ver los proyectos visibles.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <p class="alerta {{ category }}">{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        {% if error %}
+            <p class="alerta error">{{ error }}</p>
         {% endif %}
 
-    </div>
+        <form action="{{ url_for('index') }}" method="POST">
+            <label for="token">Token API</label>
+            <input type="password" id="token" name="token"
+                   placeholder="Tu token de OpenProject" required>
+            <button type="submit">Conectar</button>
+        </form>
+
+    {% endif %}
+
+</div>
+
+<script>
+    const BASE_PATH = "{{ request.script_root }}";
+</script>
+
+<script src="{{ url_for('static', filename='js/proyecto-tree.js') }}"></script>
 
 </body>
 </html>
