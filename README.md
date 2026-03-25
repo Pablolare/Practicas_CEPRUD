@@ -84,23 +84,25 @@ La aplicación estará disponible en `http://127.0.0.1:5000/ceprud/`.
 
 ## Despliegue en producción (Apache + Gunicorn)
 
-### 1. Subir el proyecto al servidor
+### Primera vez
 
-Sube el proyecto al servidor por SFTP (sin la carpeta `.venv`).
-
-### 2. Crear el entorno virtual e instalar dependencias
-
-Conéctate por SSH al servidor y ejecuta:
+Conéctate por SSH al servidor y clona el repositorio:
 
 ```bash
-cd /home/tu_usuario/Practicas_CEPRUD
+git clone https://github.com/tu-usuario/openproject-horas-reporter.git
+cd openproject-horas-reporter
+```
+
+Crea el entorno virtual e instala las dependencias:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pip install gunicorn
 ```
 
-### 3. Arrancar Gunicorn
+### Arrancar Gunicorn
 
 **Importante**: Gunicorn debe estar corriendo antes de que Apache pueda redirigir el tráfico a la aplicación.
 
@@ -108,13 +110,19 @@ pip install gunicorn
 nohup gunicorn -w 4 -b 127.0.0.1:5000 --env SCRIPT_NAME=/ceprud app:app &
 ```
 
+- `nohup` hace que el proceso siga corriendo aunque cierres la sesión SSH
+- `-w 4` arranca 4 workers para manejar peticiones en paralelo
+- `-b 127.0.0.1:5000` escucha solo en localhost, no expuesto al exterior
+- `--env SCRIPT_NAME=/ceprud` indica a Flask que la app está en el subdirectorio `/ceprud/`
+- `&` deja el proceso corriendo en segundo plano
+
 Para verificar que está corriendo correctamente:
 
 ```bash
 curl http://127.0.0.1:5000/ceprud/
 ```
 
-### 4. Configurar Apache (reverse proxy)
+### Configurar Apache (reverse proxy)
 
 Añadir en el archivo de configuración de Apache (antes del `ProxyPass /` general):
 
@@ -123,7 +131,7 @@ ProxyPass /ceprud/ http://127.0.0.1:5000/ceprud/
 ProxyPassReverse /ceprud/ http://127.0.0.1:5000/ceprud/
 ```
 
-### 5. Reiniciar Apache
+### Reiniciar Apache
 
 ```bash
 sudo systemctl restart apache2
@@ -131,8 +139,18 @@ sudo systemctl restart apache2
 
 La aplicación estará disponible en `https://ofiwebsubdir.ugr.es/ceprud/`.
 
+## Actualizar el proyecto en producción
+
+Para subir cambios al servidor, conéctate por SSH y ejecuta:
+
+```bash
+cd /home/tu_usuario/Practicas_CEPRUD
+git pull
+pkill gunicorn
+nohup gunicorn -w 4 -b 127.0.0.1:5000 --env SCRIPT_NAME=/ceprud app:app &
+```
+
 ### Notas importantes
 
-- Si el servidor se reinicia, Gunicorn se detendrá y habrá que arrancarlo de nuevo manualmente con el comando del paso 3. La automatización de este arranque mediante `systemd` está pendiente de configurar.
-- Para detener Gunicorn: `pkill gunicorn`
-- Para subir cambios: sincroniza los ficheros por SFTP y reinicia Gunicorn.
+- Si el servidor se reinicia, Gunicorn se detendrá y habrá que arrancarlo de nuevo manualmente. La automatización de este arranque mediante `systemd` está pendiente de configurar.
+- Para detener Gunicorn manualmente: `pkill gunicorn`
