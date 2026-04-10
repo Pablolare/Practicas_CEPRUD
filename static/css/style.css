@@ -379,10 +379,56 @@ button:active {
     margin-top: 2px;
 }
 
-/* ── Columna horas (alineada a la derecha) ── */
-.col-horas {
-    text-align: right;
+/* ── Tabla cruzada del informe ── */
+.tabla-scroll {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.tabla-informe {
+    border-radius: 0;
+    border: none;
+    min-width: 100%;
+}
+
+.tabla-informe th,
+.tabla-informe td {
+    white-space: nowrap;
+}
+
+.tabla-informe .col-proyecto {
+    text-align: left;
+    min-width: 200px;
+    white-space: normal;
+}
+
+.tabla-informe .celda-proyecto {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+/* Columnas de horas y total: centradas tanto cabecera como celda */
+.col-horas,
+.col-total,
+.tabla-informe th:not(.col-proyecto) {
+    text-align: center;
     font-weight: 600;
+}
+
+.col-total {
+    background: rgba(99, 102, 241, 0.04);
+    font-weight: 700;
+    color: #3730a3;
+}
+
+/* Fila de totales al pie */
+.fila-total td {
+    background: rgba(99, 102, 241, 0.06);
+    font-weight: 700;
+    color: #3730a3;
+    border-top: 2px solid rgba(99, 102, 241, 0.15);
+    border-bottom: none;
 }
 
 /* ══════════════════════════════════════════
@@ -821,6 +867,23 @@ tbody tr:last-child td {
 
 .btn-clasificar.activo[data-tipo="area"]:last-child {
     border-right: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* ── Botón informe por proyecto ── */
+.btn-informe-mini {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.btn-informe-mini:hover {
+    opacity: 0.85;
 }
 
 /* ── Fase 4: Programar envío ── */

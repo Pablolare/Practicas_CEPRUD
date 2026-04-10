@@ -107,6 +107,15 @@ def construir_arbol(projects):
 
 # ─── Helpers: árbol desde sesión ──────────────────────────────────────────────
 
+def obtener_ids_descendientes(proyecto_id, proyectos):
+    """Devuelve lista con el ID del proyecto y todos sus subproyectos recursivamente."""
+    ids = [proyecto_id]
+    for p in proyectos:
+        if p["parent_id"] == proyecto_id:
+            ids.extend(obtener_ids_descendientes(p["id"], proyectos))
+    return ids
+
+
 def construir_arbol_sesion(proyectos):
     """Construye árbol padre-hijo a partir de la lista de sesión {id, name, parent_id}."""
     por_id = {p["id"]: dict(p, children=[]) for p in proyectos}
@@ -359,6 +368,80 @@ def debug_informe():
         })
     except Exception as e:
         return jsonify({"error": str(e)})
+
+
+@app.route("/informe/<int:proyecto_id>", methods=["GET", "POST"])
+def informe_proyecto(proyecto_id):
+    """Genera el informe de horas de un proyecto y todos sus subproyectos."""
+    if not session.get("op_token"):
+        return redirect(url_for("index"))
+
+    proyectos = session.get("proyectos", [])
+    proyecto_raiz = next((p for p in proyectos if p["id"] == proyecto_id), None)
+    if not proyecto_raiz:
+        return redirect(url_for("index"))
+
+    resultado         = None
+    personas_ordenadas = []
+    totales_persona   = {}
+    dias              = ""
+
+    if request.method == "POST":
+        dias_raw = request.form.get("dias", "").strip()
+        dias     = int(dias_raw) if dias_raw else None
+
+        if dias:
+            fecha_desde       = (datetime.today() - timedelta(days=dias)).strftime("%Y-%m-%d")
+            fecha_desde_label = (datetime.today() - timedelta(days=dias)).strftime("%d/%m/%Y")
+        else:
+            fecha_desde       = None
+            fecha_desde_label = "el inicio"
+
+        # IDs del proyecto raíz + todos sus subproyectos
+        ids          = obtener_ids_descendientes(proyecto_id, proyectos)
+        nombre_por_id = {p["id"]: p["name"] for p in proyectos}
+
+        resultado      = {}
+        todas_personas = set()
+
+        for pid in ids:
+            entries = obtener_time_entries(pid, fecha_desde)
+            if not entries:
+                continue
+            nombre   = nombre_por_id.get(pid, str(pid))
+            personas = {}
+            for entry in entries:
+                persona = entry.get("_links", {}).get("user", {}).get("title", "Desconocido")
+                horas   = parse_horas(entry.get("hours", 0))
+                personas[persona] = personas.get(persona, 0.0) + horas
+                todas_personas.add(persona)
+            resultado[nombre] = {
+                "personas": personas,
+                "total":    sum(personas.values())
+            }
+
+        personas_ordenadas = sorted(todas_personas)
+        totales_persona    = {
+            p: sum(datos["personas"].get(p, 0.0) for datos in resultado.values())
+            for p in personas_ordenadas
+        }
+
+        session["ultimo_informe"] = {
+            "resultado":          resultado,
+            "personas_ordenadas": personas_ordenadas,
+            "totales_persona":    totales_persona,
+            "dias":               dias,
+            "fecha_desde":        fecha_desde_label,
+            "proyecto_nombre":    proyecto_raiz["name"]
+        }
+
+    return render_template("informe.html",
+                           resultado=resultado,
+                           personas_ordenadas=personas_ordenadas,
+                           totales_persona=totales_persona,
+                           dias=dias,
+                           proyecto_nombre=proyecto_raiz["name"],
+                           proyecto_id=proyecto_id)
 
 
 @app.route("/informe/ver")

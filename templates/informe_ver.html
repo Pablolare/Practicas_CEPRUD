@@ -2,66 +2,58 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Informe de horas – OpenProject</title>
+    <title>Informe de horas – {{ proyecto_nombre }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="pagina-imprimible">
 
 <div class="cabecera-informe">
     <div>
-        <h1>Informe de horas registradas</h1>
+        <h1>Informe de horas – {{ proyecto_nombre }}</h1>
         <p class="meta">
             {% if dias %}Últimos {{ dias }} días · desde {{ fecha_desde }}{% else %}Todo el historial{% endif %}
-            {% if detalle %} · Desglosado por paquete de trabajo{% endif %}
         </p>
     </div>
     <button class="btn-imprimir" onclick="window.print()">Imprimir / Guardar PDF</button>
 </div>
 
 {% if resultado %}
-    {% for nombre_proyecto, datos in resultado.items() %}
-    <div class="proyecto-bloque">
-
-        <div class="proyecto-bloque-header">
-            <span class="proyecto-bloque-nombre">{{ nombre_proyecto }}</span>
-            <span class="proyecto-bloque-total">{{ "%.1f"|format(datos.total) }} h</span>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Persona</th>
-                    {% if detalle %}<th>Paquete de trabajo</th>{% endif %}
-                    <th class="col-horas">Horas</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for persona, info in datos.personas.items() %}
-                    {% if detalle and info.paquetes %}
-                        {% for paquete, horas in info.paquetes.items() %}
-                        <tr>
-                            {% if loop.first %}
-                            <td class="celda-persona" rowspan="{{ info.paquetes|length }}">
-                                {{ persona }}
-                                <span class="subtotal-persona">{{ "%.1f"|format(info.total) }} h total</span>
-                            </td>
-                            {% endif %}
-                            <td class="celda-paquete">{{ paquete }}</td>
-                            <td class="col-horas">{{ "%.1f"|format(horas) }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td class="celda-persona">{{ persona }}</td>
-                        <td class="col-horas">{{ "%.1f"|format(info.total) }}</td>
-                    </tr>
-                    {% endif %}
+<div class="tabla-scroll">
+    <table class="tabla-informe">
+        <thead>
+            <tr>
+                <th class="col-proyecto">Proyecto / Subproyecto</th>
+                {% for persona in personas_ordenadas %}
+                <th>{{ persona }}</th>
                 {% endfor %}
-            </tbody>
-        </table>
-
-    </div>
-    {% endfor %}
+                <th class="col-total">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nombre_proyecto, datos in resultado.items() %}
+            <tr>
+                <td class="celda-proyecto">{{ nombre_proyecto }}</td>
+                {% for persona in personas_ordenadas %}
+                    {% set h = datos.personas.get(persona, 0) %}
+                    <td class="col-horas">{% if h > 0 %}{{ "%.1f"|format(h) }}{% else %}–{% endif %}</td>
+                {% endfor %}
+                <td class="col-horas col-total">{{ "%.1f"|format(datos.total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="fila-total">
+                <td>TOTAL</td>
+                {% for persona in personas_ordenadas %}
+                <td class="col-horas">{{ "%.1f"|format(totales_persona.get(persona, 0)) }}</td>
+                {% endfor %}
+                <td class="col-horas col-total">
+                    {{ "%.1f"|format(resultado.values()|sum(attribute='total')) }}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 {% else %}
     <p class="sin-datos">No hay datos para mostrar.</p>
 {% endif %}
