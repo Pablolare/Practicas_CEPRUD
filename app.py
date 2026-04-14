@@ -57,7 +57,83 @@ def api_get(path, params=None):
         return None
 
 
+def api_post(path, data):
+    """POST autenticado a la API usando el token guardado en sesión."""
+    token = session.get("op_token")
+    if not token:
+        return None, 401
+    try:
+        headers = {**get_auth_header(token), "Content-Type": "application/hal+json"}
+        r = requests.post(
+            f"{BASE_URL}{path}",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        return r.json(), r.status_code
+    except requests.exceptions.RequestException:
+        return None, 0
+
+
+def api_patch(path, data):
+    """PATCH autenticado a la API usando el token guardado en sesión."""
+    token = session.get("op_token")
+    if not token:
+        return None, 401
+    try:
+        headers = {**get_auth_header(token), "Content-Type": "application/hal+json"}
+        r = requests.patch(
+            f"{BASE_URL}{path}",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        return r.json(), r.status_code
+    except requests.exceptions.RequestException:
+        return None, 0
+
+
 # ─── Helpers: proyectos ───────────────────────────────────────────────────────
+
+def obtener_usuarios():
+    """Devuelve todos los usuarios de OpenProject con paginación."""
+    usuarios = []
+    offset   = 1
+    while True:
+        data = api_get("/api/v3/users", params={"pageSize": 100, "offset": offset})
+        if not data:
+            break
+        page = data.get("_embedded", {}).get("elements", [])
+        if not page:
+            break
+        usuarios.extend(page)
+        if len(usuarios) >= data.get("total", 0):
+            break
+        offset += 100
+    return usuarios
+
+
+def obtener_roles():
+    """Devuelve todos los roles disponibles en OpenProject."""
+    data = api_get("/api/v3/roles")
+    if data:
+        return data.get("_embedded", {}).get("elements", [])
+    return []
+
+
+def obtener_membresia_existente(proyecto_id, usuario_id):
+    """Devuelve la membresía existente para el par (proyecto, usuario), o None."""
+    filtros = json.dumps([
+        {"project":   {"operator": "=", "values": [str(proyecto_id)]}},
+        {"principal": {"operator": "=", "values": [str(usuario_id)]}}
+    ])
+    data = api_get("/api/v3/memberships", params={"filters": filtros})
+    if data:
+        elementos = data.get("_embedded", {}).get("elements", [])
+        if elementos:
+            return elementos[0]
+    return None
+
 
 def obtener_miembros(proyecto_id):
     """Devuelve todos los miembros de un proyecto con sus roles."""
@@ -675,6 +751,96 @@ def programar():
                            config=config_act,
                            arbol=arbol_proyectos,
                            seleccionados=seleccionados)
+
+
+# ─── FASE 5: Asignación masiva de usuarios/roles a proyectos ─────────────────
+
+@app.route("/asignar", methods=["GET", "POST"])
+def asignar():
+    if not session.get("op_token"):
+        return redirect(url_for("index"))
+
+    usuarios        = obtener_usuarios()
+    roles           = obtener_roles()
+    arbol_proyectos = construir_arbol_sesion(session.get("proyectos", []))
+    resultados      = None
+
+    if request.method == "POST":
+        usuario_ids  = request.form.getlist("usuario_ids")
+        rol_ids      = request.form.getlist("rol_ids")
+        proyecto_ids = request.form.getlist("proyecto_ids")
+
+        if not usuario_ids or not rol_ids or not proyecto_ids:
+            flash("Debes seleccionar al menos un usuario, un rol y un proyecto.", "error")
+            return render_template("asignar.html",
+                                   usuarios=usuarios, roles=roles,
+                                   arbol=arbol_proyectos, resultados=None)
+
+        proyectos_map = {str(p["id"]): p["name"] for p in session.get("proyectos", [])}
+        usuarios_map  = {str(u["id"]): u.get("name", str(u["id"])) for u in usuarios}
+        roles_map     = {str(r["id"]): r.get("name", str(r["id"])) for r in roles}
+        nombres_roles = [roles_map.get(rid, rid) for rid in rol_ids]
+        roles_links   = [{"href": f"/api/v3/roles/{rid}"} for rid in rol_ids]
+
+        resultados = []
+
+        for uid in usuario_ids:
+            for pid in proyecto_ids:
+                nombre_usuario  = usuarios_map.get(str(uid), uid)
+                nombre_proyecto = proyectos_map.get(str(pid), pid)
+
+                membresia = obtener_membresia_existente(pid, uid)
+
+                if membresia:
+                    # Ya es miembro: añadir los nuevos roles a los existentes (sin duplicados)
+                    mem_id           = membresia["id"]
+                    hrefs_existentes = {
+                        r.get("href", "")
+                        for r in membresia.get("_links", {}).get("roles", [])
+                    }
+                    roles_merged = [{"href": r.get("href", "")}
+                                    for r in membresia.get("_links", {}).get("roles", [])]
+                    for rl in roles_links:
+                        if rl["href"] not in hrefs_existentes:
+                            roles_merged.append(rl)
+
+                    _, status = api_patch(f"/api/v3/memberships/{mem_id}",
+                                          {"_links": {"roles": roles_merged}})
+                    if status == 200:
+                        estado = "actualizado"
+                        ok     = True
+                    else:
+                        estado = f"error al actualizar (HTTP {status})"
+                        ok     = False
+                else:
+                    # Nuevo miembro: POST
+                    _, status = api_post("/api/v3/memberships", {
+                        "_links": {
+                            "principal": {"href": f"/api/v3/users/{uid}"},
+                            "project":   {"href": f"/api/v3/projects/{pid}"},
+                            "roles":     roles_links
+                        }
+                    })
+                    if status == 201:
+                        estado = "creado"
+                        ok     = True
+                    else:
+                        estado = f"error al crear (HTTP {status})"
+                        ok     = False
+
+                resultados.append({
+                    "usuario":  nombre_usuario,
+                    "proyecto": nombre_proyecto,
+                    "roles":    nombres_roles,
+                    "estado":   estado,
+                    "ok":       ok
+                })
+
+    return render_template("asignar.html",
+                           usuarios=usuarios,
+                           roles=roles,
+                           arbol=arbol_proyectos,
+                           resultados=resultados)
 
 
 if __name__ == "__main__":
