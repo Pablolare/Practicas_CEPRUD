@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Generar informe – OpenProject Reporter</title>
+    <title>Informe – {{ proyecto_nombre }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -10,13 +10,11 @@
 <div class="container">
 
     <div class="cabecera">
-        <h1>Generar informe</h1>
+        <h1>Informe: {{ proyecto_nombre }}</h1>
         <a href="{{ url_for('index') }}" class="btn-secundario">← Volver</a>
     </div>
 
-    <!-- Formulario: solo días y detalle -->
-    <form action="{{ url_for('informe') }}" method="POST" class="form-informe">
-
+    <form action="{{ url_for('informe_proyecto', proyecto_id=proyecto_id) }}" method="POST" class="form-informe">
         <div class="form-seccion">
             <label for="dias">Días hacia atrás <span class="dias-hint">(dejar vacío = todo el historial)</span></label>
             <div class="dias-control">
@@ -25,82 +23,57 @@
                        placeholder="Sin límite">
             </div>
         </div>
-
-        <div class="form-seccion">
-            <label class="check-item">
-                <input type="checkbox" name="detalle" {% if detalle %}checked{% endif %}>
-                <span>Desglosar por paquete de trabajo</span>
-            </label>
-        </div>
-
         <button type="submit">Generar informe</button>
-
     </form>
 
-    <!-- Resultado -->
     {% if resultado is not none %}
 
         <div class="informe-cabecera">
-            <h2>Proyectos con horas registradas</h2>
+            <h2>Horas registradas</h2>
             <a href="{{ url_for('informe_ver') }}" target="_blank" class="btn-pdf">
                 Ver informe completo
             </a>
         </div>
 
         {% if resultado %}
-            {% for nombre_proyecto, datos in resultado.items() %}
-            <div class="informe-proyecto">
-
-                <div class="informe-proyecto-header">
-                    <span class="informe-proyecto-nombre">{{ nombre_proyecto }}</span>
-                    <span class="informe-total-badge">
-                        {{ "%.1f"|format(datos.total) }} h total
-                    </span>
-                </div>
-
-                {% if datos.personas %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Persona</th>
-                            {% if detalle %}<th>Paquete de trabajo</th>{% endif %}
-                            <th class="col-horas">Horas</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for persona, info in datos.personas.items() %}
-                            {% if detalle and info.paquetes %}
-                                {% for paquete, horas in info.paquetes.items() %}
-                                <tr>
-                                    {% if loop.first %}
-                                    <td class="celda-persona" rowspan="{{ info.paquetes|length }}">
-                                        {{ persona }}
-                                        <span class="subtotal-persona">{{ "%.1f"|format(info.total) }} h</span>
-                                    </td>
-                                    {% endif %}
-                                    <td class="celda-paquete">{{ paquete }}</td>
-                                    <td class="col-horas">{{ "%.1f"|format(horas) }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                            <tr>
-                                <td class="celda-persona">{{ persona }}</td>
-                                <td class="col-horas">{{ "%.1f"|format(info.total) }}</td>
-                            </tr>
-                            {% endif %}
+        <div class="tabla-scroll">
+            <table class="tabla-informe">
+                <thead>
+                    <tr>
+                        <th class="col-proyecto">Proyecto / Subproyecto</th>
+                        {% for persona in personas_ordenadas %}
+                        <th>{{ persona }}</th>
                         {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                    <p class="sin-responsables">Sin horas registradas en este período.</p>
-                {% endif %}
-
-            </div>
-            {% endfor %}
+                        <th class="col-total">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nombre_proyecto, datos in resultado.items() %}
+                    <tr>
+                        <td class="celda-proyecto">{{ nombre_proyecto }}</td>
+                        {% for persona in personas_ordenadas %}
+                            {% set h = datos.personas.get(persona, 0) %}
+                            <td class="col-horas">{% if h > 0 %}{{ "%.1f"|format(h) }}{% else %}–{% endif %}</td>
+                        {% endfor %}
+                        <td class="col-horas col-total">{{ "%.1f"|format(datos.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fila-total">
+                        <td>TOTAL</td>
+                        {% for persona in personas_ordenadas %}
+                        <td class="col-horas">{{ "%.1f"|format(totales_persona.get(persona, 0)) }}</td>
+                        {% endfor %}
+                        <td class="col-horas col-total">
+                            {{ "%.1f"|format(resultado.values()|sum(attribute='total')) }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
         {% else %}
-            <p class="sin-responsables">
-                No se encontraron proyectos con horas registradas en este período.
-            </p>
+            <p class="sin-responsables">No se encontraron horas registradas en este período.</p>
         {% endif %}
 
     {% endif %}

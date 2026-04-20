@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Asignación masiva – OpenProject Reporter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="container container-asignar">
+
+    <div class="cabecera">
+        <h1>Asignación masiva</h1>
+        <a href="{{ url_for('index') }}" class="btn-secundario">← Volver</a>
+    </div>
+
+    <p>Selecciona uno o varios usuarios, uno o varios roles y uno o varios proyectos.
+       La asignación se aplicará a todas las combinaciones a la vez.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alerta {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- ── Formulario ── -->
+    <form action="{{ url_for('asignar') }}" method="POST" class="form-informe" id="form-asignar">
+
+        <!-- SECCIÓN 1: Usuarios -->
+        <div class="asignar-seccion">
+            <h2 class="form-titulo">1. Usuarios</h2>
+            <p class="dias-hint">Selecciona los usuarios que quieres asignar.</p>
+
+            <div class="asignar-busqueda">
+                <input type="text" id="buscar-usuario" placeholder="Buscar usuario…" autocomplete="off">
+                <label class="arbol-sel-label asignar-sel-todos">
+                    <input type="checkbox" id="sel-todos-usuarios" class="arbol-sel-check">
+                    <span><strong>Seleccionar todos</strong></span>
+                </label>
+            </div>
+
+            <div class="asignar-lista" id="lista-usuarios">
+                {% if usuarios %}
+                    {% for u in usuarios %}
+                    <label class="asignar-usuario-item" data-nombre="{{ u.name | lower }}">
+                        <input type="checkbox" class="arbol-sel-check cb-usuario"
+                               name="usuario_ids" value="{{ u.id }}">
+                        <span class="asignar-usuario-nombre">{{ u.name }}</span>
+                        {% if u.email %}
+                        <span class="asignar-usuario-email">{{ u.email }}</span>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                {% else %}
+                    <p class="dias-hint">No se pudieron cargar los usuarios. Comprueba que el token tiene permisos de administrador.</p>
+                {% endif %}
+            </div>
+            <p class="asignar-contador" id="contador-usuarios">0 usuario(s) seleccionado(s)</p>
+        </div>
+
+        <!-- SECCIÓN 2: Roles -->
+        <div class="asignar-seccion">
+            <h2 class="form-titulo">2. Roles</h2>
+            <p class="dias-hint">Selecciona los roles que se asignarán. Si el usuario ya era miembro, los roles nuevos se añaden a los existentes.</p>
+
+            <div class="asignar-roles">
+                {% if roles %}
+                    {% for r in roles %}
+                    <label class="check-item cb-rol-label">
+                        <input type="checkbox" class="cb-rol"
+                               name="rol_ids" value="{{ r.id }}">
+                        <span>{{ r.name }}</span>
+                    </label>
+                    {% endfor %}
+                {% else %}
+                    <p class="dias-hint">No se pudieron cargar los roles.</p>
+                {% endif %}
+            </div>
+            <p class="asignar-contador" id="contador-roles">0 rol(es) seleccionado(s)</p>
+        </div>
+
+        <!-- SECCIÓN 3: Proyectos -->
+        <div class="asignar-seccion">
+            <h2 class="form-titulo">3. Proyectos</h2>
+            <p class="dias-hint">Selecciona los proyectos destino.</p>
+
+            {% macro nodo_proyecto(p) %}
+            <div class="arbol-sel-nodo" data-id="{{ p.id }}">
+                <label class="arbol-sel-label">
+                    <input type="checkbox" class="arbol-sel-check cb-proyecto"
+                           name="proyecto_ids" value="{{ p.id }}">
+                    <span>{{ p.name }}</span>
+                </label>
+                {% if p.children %}
+                <div class="arbol-sel-hijos">
+                    {% for hijo in p.children %}{{ nodo_proyecto(hijo) }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endmacro %}
+
+            <div class="arbol-sel">
+                {% if arbol %}
+                    <label class="arbol-sel-label arbol-sel-todos">
+                        <input type="checkbox" id="sel-todos-proyectos" class="arbol-sel-check">
+                        <span><strong>Todos los proyectos</strong></span>
+                    </label>
+                    <hr class="arbol-sel-separador">
+                    {% for raiz in arbol %}{{ nodo_proyecto(raiz) }}{% endfor %}
+                {% else %}
+                    <p class="dias-hint">No hay proyectos disponibles. Vuelve al inicio y carga los proyectos.</p>
+                {% endif %}
+            </div>
+            <p class="asignar-contador" id="contador-proyectos">0 proyecto(s) seleccionado(s)</p>
+        </div>
+
+        <!-- Resumen y botón -->
+        <div class="asignar-submit-area">
+            <div id="resumen-asignacion" class="asignar-resumen" style="display:none">
+                Asignando <strong id="res-usuarios">0</strong> usuario(s) ×
+                <strong id="res-roles">0</strong> rol(es) a
+                <strong id="res-proyectos">0</strong> proyecto(s) =
+                <strong id="res-total">0</strong> operación(es)
+            </div>
+            <button type="submit" class="btn-asignar-submit" id="btn-submit" disabled>
+                Asignar
+            </button>
+        </div>
+
+    </form>
+
+    <!-- ── Resultados ── -->
+    {% if resultados is not none %}
+    <div class="asignar-resultados">
+        <h2 class="form-titulo" style="margin-top:0">Resultado de la asignación</h2>
+
+        {% set ok_count = resultados | selectattr('ok') | list | length %}
+        {% set err_count = resultados | length - ok_count %}
+
+        <div class="asignar-resumen-resultado">
+            <span class="badge-resultado-ok">{{ ok_count }} correcta(s)</span>
+            {% if err_count > 0 %}
+            <span class="badge-resultado-err">{{ err_count }} con error</span>
+            {% endif %}
+        </div>
+
+        <div class="tabla-scroll" style="margin-top:16px">
+            <table class="tabla-informe">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Proyecto</th>
+                        <th>Roles asignados</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resultados %}
+                    <tr class="{{ 'fila-ok' if r.ok else 'fila-err' }}">
+                        <td>{{ r.usuario }}</td>
+                        <td>{{ r.proyecto }}</td>
+                        <td>{{ r.roles | join(', ') }}</td>
+                        <td>
+                            {% if r.ok %}
+                                <span class="estado-ok">{{ r.estado }}</span>
+                            {% else %}
+                                <span class="estado-err">{{ r.estado }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// ── Búsqueda de usuarios ──────────────────────────────────────────────────────
+const inputBuscar = document.getElementById("buscar-usuario");
+inputBuscar.addEventListener("input", function () {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll(".asignar-usuario-item").forEach(item => {
+        const nombre = item.dataset.nombre || "";
+        item.style.display = (!q || nombre.includes(q)) ? "" : "none";
+    });
+});
+
+// ── Contadores y resumen ──────────────────────────────────────────────────────
+function actualizarContador(selector, idContador, singular, plural) {
+    const n = document.querySelectorAll(selector + ":checked").length;
+    document.getElementById(idContador).textContent =
+        n + " " + (n === 1 ? singular : plural) + " seleccionado(s)";
+    return n;
+}
+
+function actualizarResumen() {
+    const nu = actualizarContador(".cb-usuario",  "contador-usuarios",  "usuario", "usuarios");
+    const nr = actualizarContador(".cb-rol",       "contador-roles",     "rol",     "roles");
+    const np = actualizarContador(".cb-proyecto",  "contador-proyectos", "proyecto","proyectos");
+    const resumen = document.getElementById("resumen-asignacion");
+    const btnSubmit = document.getElementById("btn-submit");
+    if (nu > 0 && nr > 0 && np > 0) {
+        document.getElementById("res-usuarios").textContent  = nu;
+        document.getElementById("res-roles").textContent     = nr;
+        document.getElementById("res-proyectos").textContent = np;
+        document.getElementById("res-total").textContent     = nu * np;
+        resumen.style.display = "";
+        btnSubmit.disabled = false;
+    } else {
+        resumen.style.display = "none";
+        btnSubmit.disabled = true;
+    }
+}
+
+document.querySelectorAll(".cb-usuario, .cb-rol, .cb-proyecto").forEach(cb => {
+    cb.addEventListener("change", actualizarResumen);
+});
+
+// ── Seleccionar todos: usuarios ───────────────────────────────────────────────
+const cbTodosUsuarios = document.getElementById("sel-todos-usuarios");
+cbTodosUsuarios.addEventListener("change", function () {
+    document.querySelectorAll(".cb-usuario").forEach(cb => {
+        if (cb.closest(".asignar-usuario-item").style.display !== "none") {
+            cb.checked = this.checked;
+        }
+    });
+    actualizarResumen();
+});
+
+// ── Árbol de proyectos ────────────────────────────────────────────────────────
+function setDescendientes(nodo, checked) {
+    nodo.querySelectorAll(".arbol-sel-check").forEach(cb => {
+        cb.checked       = checked;
+        cb.indeterminate = false;
+    });
+}
+
+function actualizarPadre(nodo) {
+    const padre = nodo.closest(".arbol-sel-hijos")?.closest(".arbol-sel-nodo");
+    if (!padre) return;
+    const cbPadre  = padre.querySelector(":scope > label > .arbol-sel-check");
+    const hijos    = padre.querySelectorAll(".arbol-sel-hijos .arbol-sel-check");
+    const total    = hijos.length;
+    const marcados = [...hijos].filter(c => c.checked).length;
+    if (marcados === 0) {
+        cbPadre.checked = false; cbPadre.indeterminate = false;
+    } else if (marcados === total) {
+        cbPadre.checked = true;  cbPadre.indeterminate = false;
+    } else {
+        cbPadre.checked = false; cbPadre.indeterminate = true;
+    }
+    actualizarPadre(padre);
+}
+
+function actualizarTodosProyectos() {
+    const cbTodos  = document.getElementById("sel-todos-proyectos");
+    const todos    = [...document.querySelectorAll(".arbol-sel-nodo .arbol-sel-check")];
+    const marcados = todos.filter(c => c.checked).length;
+    if (marcados === 0) {
+        cbTodos.checked = false; cbTodos.indeterminate = false;
+    } else if (marcados === todos.length) {
+        cbTodos.checked = true;  cbTodos.indeterminate = false;
+    } else {
+        cbTodos.checked = false; cbTodos.indeterminate = true;
+    }
+}
+
+const cbTodosProyectos = document.getElementById("sel-todos-proyectos");
+if (cbTodosProyectos) {
+    cbTodosProyectos.addEventListener("change", function () {
+        document.querySelectorAll(".arbol-sel-nodo .arbol-sel-check").forEach(cb => {
+            cb.checked       = this.checked;
+            cb.indeterminate = false;
+        });
+        actualizarResumen();
+    });
+}
+
+document.querySelectorAll(".arbol-sel-nodo .arbol-sel-check").forEach(cb => {
+    cb.addEventListener("change", function () {
+        const nodo       = this.closest(".arbol-sel-nodo");
+        setDescendientes(nodo, this.checked);
+        this.checked       = this.checked;
+        this.indeterminate = false;
+        actualizarPadre(nodo);
+        actualizarTodosProyectos();
+        actualizarResumen();
+    });
+});
+
+// ── Inicializar contadores ────────────────────────────────────────────────────
+actualizarResumen();
+</script>
+
+</body>
+</html>

@@ -379,10 +379,56 @@ button:active {
     margin-top: 2px;
 }
 
-/* ── Columna horas (alineada a la derecha) ── */
-.col-horas {
-    text-align: right;
+/* ── Tabla cruzada del informe ── */
+.tabla-scroll {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.tabla-informe {
+    border-radius: 0;
+    border: none;
+    min-width: 100%;
+}
+
+.tabla-informe th,
+.tabla-informe td {
+    white-space: nowrap;
+}
+
+.tabla-informe .col-proyecto {
+    text-align: left;
+    min-width: 200px;
+    white-space: normal;
+}
+
+.tabla-informe .celda-proyecto {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+/* Columnas de horas y total: centradas tanto cabecera como celda */
+.col-horas,
+.col-total,
+.tabla-informe th:not(.col-proyecto) {
+    text-align: center;
     font-weight: 600;
+}
+
+.col-total {
+    background: rgba(99, 102, 241, 0.04);
+    font-weight: 700;
+    color: #3730a3;
+}
+
+/* Fila de totales al pie */
+.fila-total td {
+    background: rgba(99, 102, 241, 0.06);
+    font-weight: 700;
+    color: #3730a3;
+    border-top: 2px solid rgba(99, 102, 241, 0.15);
+    border-bottom: none;
 }
 
 /* ══════════════════════════════════════════
@@ -823,6 +869,23 @@ tbody tr:last-child td {
     border-right: 1px solid rgba(139, 92, 246, 0.3);
 }
 
+/* ── Botón informe por proyecto ── */
+.btn-informe-mini {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.btn-informe-mini:hover {
+    opacity: 0.85;
+}
+
 /* ── Fase 4: Programar envío ── */
 .btn-programar {
     display: inline-flex;
@@ -989,4 +1052,192 @@ tbody tr:last-child td {
     border: none;
     border-top: 1px solid #e0e7ff;
     margin: 6px 0 8px;
+}
+
+/* ── Botón asignación masiva ── */
+.btn-asignar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+.btn-asignar:hover { opacity: 0.85; }
+
+/* ── Página asignar: layout ── */
+.container-asignar {
+    max-width: 1000px;
+}
+
+.asignar-seccion {
+    margin-bottom: 32px;
+}
+
+/* ── Barra de búsqueda de usuario ── */
+.asignar-busqueda {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.asignar-busqueda input[type="text"] {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #1e293b;
+    background: #fff;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.asignar-busqueda input[type="text"]:focus { border-color: #0891b2; }
+
+/* ── Lista de usuarios ── */
+.asignar-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #f8faff;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.asignar-usuario-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.asignar-usuario-item:hover { background: #e0e7ff; }
+
+.asignar-usuario-nombre {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1e293b;
+    flex: 1;
+}
+
+.asignar-usuario-email {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+/* ── Roles ── */
+.asignar-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px;
+    background: #f8faff;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 10px;
+}
+
+/* ── Contador ── */
+.asignar-contador {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: #0891b2;
+    font-weight: 600;
+}
+
+/* ── Área de submit ── */
+.asignar-submit-area {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e7ff;
+}
+
+.asignar-resumen {
+    font-size: 0.92rem;
+    color: #475569;
+    flex: 1;
+    line-height: 1.5;
+}
+
+.btn-asignar-submit {
+    padding: 13px 32px;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(8, 145, 178, 0.35);
+}
+.btn-asignar-submit:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+.btn-asignar-submit:disabled {
+    background: #cbd5e1;
+    box-shadow: none;
+    cursor: not-allowed;
+    color: #94a3b8;
+}
+
+/* ── Resultados ── */
+.asignar-resultados {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 2px solid rgba(8, 145, 178, 0.15);
+}
+
+.asignar-resumen-resultado {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.badge-resultado-ok {
+    padding: 4px 14px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.badge-resultado-err {
+    padding: 4px 14px;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.fila-ok td { background: rgba(16, 185, 129, 0.03); }
+.fila-err td { background: rgba(239, 68, 68, 0.04); }
+
+.estado-ok {
+    font-weight: 600;
+    color: #047857;
+}
+.estado-err {
+    font-weight: 600;
+    color: #b91c1c;
 }

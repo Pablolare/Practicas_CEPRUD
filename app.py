@@ -57,7 +57,83 @@ def api_get(path, params=None):
         return None
 
 
+def api_post(path, data):
+    """POST autenticado a la API usando el token guardado en sesión."""
+    token = session.get("op_token")
+    if not token:
+        return None, 401
+    try:
+        headers = {**get_auth_header(token), "Content-Type": "application/hal+json"}
+        r = requests.post(
+            f"{BASE_URL}{path}",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        return r.json(), r.status_code
+    except requests.exceptions.RequestException:
+        return None, 0
+
+
+def api_patch(path, data):
+    """PATCH autenticado a la API usando el token guardado en sesión."""
+    token = session.get("op_token")
+    if not token:
+        return None, 401
+    try:
+        headers = {**get_auth_header(token), "Content-Type": "application/hal+json"}
+        r = requests.patch(
+            f"{BASE_URL}{path}",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        return r.json(), r.status_code
+    except requests.exceptions.RequestException:
+        return None, 0
+
+
 # ─── Helpers: proyectos ───────────────────────────────────────────────────────
+
+def obtener_usuarios():
+    """Devuelve todos los usuarios de OpenProject con paginación."""
+    usuarios = []
+    offset   = 1
+    while True:
+        data = api_get("/api/v3/users", params={"pageSize": 100, "offset": offset})
+        if not data:
+            break
+        page = data.get("_embedded", {}).get("elements", [])
+        if not page:
+            break
+        usuarios.extend(page)
+        if len(usuarios) >= data.get("total", 0):
+            break
+        offset += 100
+    return usuarios
+
+
+def obtener_roles():
+    """Devuelve todos los roles disponibles en OpenProject."""
+    data = api_get("/api/v3/roles")
+    if data:
+        return data.get("_embedded", {}).get("elements", [])
+    return []
+
+
+def obtener_membresia_existente(proyecto_id, usuario_id):
+    """Devuelve la membresía existente para el par (proyecto, usuario), o None."""
+    filtros = json.dumps([
+        {"project":   {"operator": "=", "values": [str(proyecto_id)]}},
+        {"principal": {"operator": "=", "values": [str(usuario_id)]}}
+    ])
+    data = api_get("/api/v3/memberships", params={"filters": filtros})
+    if data:
+        elementos = data.get("_embedded", {}).get("elements", [])
+        if elementos:
+            return elementos[0]
+    return None
+
 
 def obtener_miembros(proyecto_id):
     """Devuelve todos los miembros de un proyecto con sus roles."""
@@ -106,6 +182,15 @@ def construir_arbol(projects):
 
 
 # ─── Helpers: árbol desde sesión ──────────────────────────────────────────────
+
+def obtener_ids_descendientes(proyecto_id, proyectos):
+    """Devuelve lista con el ID del proyecto y todos sus subproyectos recursivamente."""
+    ids = [proyecto_id]
+    for p in proyectos:
+        if p["parent_id"] == proyecto_id:
+            ids.extend(obtener_ids_descendientes(p["id"], proyectos))
+    return ids
+
 
 def construir_arbol_sesion(proyectos):
     """Construye árbol padre-hijo a partir de la lista de sesión {id, name, parent_id}."""
@@ -361,6 +446,80 @@ def debug_informe():
         return jsonify({"error": str(e)})
 
 
+@app.route("/informe/<int:proyecto_id>", methods=["GET", "POST"])
+def informe_proyecto(proyecto_id):
+    """Genera el informe de horas de un proyecto y todos sus subproyectos."""
+    if not session.get("op_token"):
+        return redirect(url_for("index"))
+
+    proyectos = session.get("proyectos", [])
+    proyecto_raiz = next((p for p in proyectos if p["id"] == proyecto_id), None)
+    if not proyecto_raiz:
+        return redirect(url_for("index"))
+
+    resultado         = None
+    personas_ordenadas = []
+    totales_persona   = {}
+    dias              = ""
+
+    if request.method == "POST":
+        dias_raw = request.form.get("dias", "").strip()
+        dias     = int(dias_raw) if dias_raw else None
+
+        if dias:
+            fecha_desde       = (datetime.today() - timedelta(days=dias)).strftime("%Y-%m-%d")
+            fecha_desde_label = (datetime.today() - timedelta(days=dias)).strftime("%d/%m/%Y")
+        else:
+            fecha_desde       = None
+            fecha_desde_label = "el inicio"
+
+        # IDs del proyecto raíz + todos sus subproyectos
+        ids          = obtener_ids_descendientes(proyecto_id, proyectos)
+        nombre_por_id = {p["id"]: p["name"] for p in proyectos}
+
+        resultado      = {}
+        todas_personas = set()
+
+        for pid in ids:
+            entries = obtener_time_entries(pid, fecha_desde)
+            if not entries:
+                continue
+            nombre   = nombre_por_id.get(pid, str(pid))
+            personas = {}
+            for entry in entries:
+                persona = entry.get("_links", {}).get("user", {}).get("title", "Desconocido")
+                horas   = parse_horas(entry.get("hours", 0))
+                personas[persona] = personas.get(persona, 0.0) + horas
+                todas_personas.add(persona)
+            resultado[nombre] = {
+                "personas": personas,
+                "total":    sum(personas.values())
+            }
+
+        personas_ordenadas = sorted(todas_personas)
+        totales_persona    = {
+            p: sum(datos["personas"].get(p, 0.0) for datos in resultado.values())
+            for p in personas_ordenadas
+        }
+
+        session["ultimo_informe"] = {
+            "resultado":          resultado,
+            "personas_ordenadas": personas_ordenadas,
+            "totales_persona":    totales_persona,
+            "dias":               dias,
+            "fecha_desde":        fecha_desde_label,
+            "proyecto_nombre":    proyecto_raiz["name"]
+        }
+
+    return render_template("informe.html",
+                           resultado=resultado,
+                           personas_ordenadas=personas_ordenadas,
+                           totales_persona=totales_persona,
+                           dias=dias,
+                           proyecto_nombre=proyecto_raiz["name"],
+                           proyecto_id=proyecto_id)
+
+
 @app.route("/informe/ver")
 def informe_ver():
     """Muestra el informe en formato imprimible (nueva pestaña)."""
@@ -592,6 +751,96 @@ def programar():
                            config=config_act,
                            arbol=arbol_proyectos,
                            seleccionados=seleccionados)
+
+
+# ─── FASE 5: Asignación masiva de usuarios/roles a proyectos ─────────────────
+
+@app.route("/asignar", methods=["GET", "POST"])
+def asignar():
+    if not session.get("op_token"):
+        return redirect(url_for("index"))
+
+    usuarios        = obtener_usuarios()
+    roles           = obtener_roles()
+    arbol_proyectos = construir_arbol_sesion(session.get("proyectos", []))
+    resultados      = None
+
+    if request.method == "POST":
+        usuario_ids  = request.form.getlist("usuario_ids")
+        rol_ids      = request.form.getlist("rol_ids")
+        proyecto_ids = request.form.getlist("proyecto_ids")
+
+        if not usuario_ids or not rol_ids or not proyecto_ids:
+            flash("Debes seleccionar al menos un usuario, un rol y un proyecto.", "error")
+            return render_template("asignar.html",
+                                   usuarios=usuarios, roles=roles,
+                                   arbol=arbol_proyectos, resultados=None)
+
+        proyectos_map = {str(p["id"]): p["name"] for p in session.get("proyectos", [])}
+        usuarios_map  = {str(u["id"]): u.get("name", str(u["id"])) for u in usuarios}
+        roles_map     = {str(r["id"]): r.get("name", str(r["id"])) for r in roles}
+        nombres_roles = [roles_map.get(rid, rid) for rid in rol_ids]
+        roles_links   = [{"href": f"/api/v3/roles/{rid}"} for rid in rol_ids]
+
+        resultados = []
+
+        for uid in usuario_ids:
+            for pid in proyecto_ids:
+                nombre_usuario  = usuarios_map.get(str(uid), uid)
+                nombre_proyecto = proyectos_map.get(str(pid), pid)
+
+                membresia = obtener_membresia_existente(pid, uid)
+
+                if membresia:
+                    # Ya es miembro: añadir los nuevos roles a los existentes (sin duplicados)
+                    mem_id           = membresia["id"]
+                    hrefs_existentes = {
+                        r.get("href", "")
+                        for r in membresia.get("_links", {}).get("roles", [])
+                    }
+                    roles_merged = [{"href": r.get("href", "")}
+                                    for r in membresia.get("_links", {}).get("roles", [])]
+                    for rl in roles_links:
+                        if rl["href"] not in hrefs_existentes:
+                            roles_merged.append(rl)
+
+                    _, status = api_patch(f"/api/v3/memberships/{mem_id}",
+                                          {"_links": {"roles": roles_merged}})
+                    if status == 200:
+                        estado = "actualizado"
+                        ok     = True
+                    else:
+                        estado = f"error al actualizar (HTTP {status})"
+                        ok     = False
+                else:
+                    # Nuevo miembro: POST
+                    _, status = api_post("/api/v3/memberships", {
+                        "_links": {
+                            "principal": {"href": f"/api/v3/users/{uid}"},
+                            "project":   {"href": f"/api/v3/projects/{pid}"},
+                            "roles":     roles_links
+                        }
+                    })
+                    if status == 201:
+                        estado = "creado"
+                        ok     = True
+                    else:
+                        estado = f"error al crear (HTTP {status})"
+                        ok     = False
+
+                resultados.append({
+                    "usuario":  nombre_usuario,
+                    "proyecto": nombre_proyecto,
+                    "roles":    nombres_roles,
+                    "estado":   estado,
+                    "ok":       ok
+                })
+
+    return render_template("asignar.html",
+                           usuarios=usuarios,
+                           roles=roles,
+                           arbol=arbol_proyectos,
+                           resultados=resultados)
 
 
 if __name__ == "__main__":
